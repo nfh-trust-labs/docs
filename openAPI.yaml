@@ -1,0 +1,3281 @@
+openapi: 3.0.3
+info:
+  title: DeDi API
+  description: |
+    DeDi (Decentralized Directory) API provides comprehensive functionality for managing 
+    namespaces, registries, and records in a decentralized directory system.
+    
+    ## Authentication
+    
+    The API supports dual authentication methods:
+    - **API Key Authentication**: Bearer token in Authorization header (recommended for production)
+    - **Cookie Authentication**: Token cookie for browser integration
+    
+    All authentication endpoints now support password-based authentication with robust security requirements.
+    
+    ## Base Concepts
+    
+    - **Namespace**: Top-level organization unit for grouping related registries
+    - **Registry**: Schema-defined container for records within a namespace  
+    - **Record**: Individual data entries conforming to registry schema
+    
+    ## Key Features
+    
+    - **Password-based Authentication**: Secure login with enforced password complexity
+    - **Domain Verification**: Verify ownership of domains for namespace binding
+    - **Bulk Operations**: CSV import/export for large-scale data management
+    - **Real-time Notifications**: Watch system for monitoring changes via webhooks
+    - **Delegation Management**: Fine-grained access control and user permissions
+    - **Version Control**: Complete history tracking for all resources
+    - **Advanced Search**: Powerful search with nested field support
+    - **State Management**: Comprehensive lifecycle management for registries and records
+    
+    ## Rate Limiting
+    
+    Standard rate limits apply to all endpoints. Contact support for enterprise limits.
+    
+    ## Production Readiness
+    
+    This API specification is production-grade and includes:
+    - Comprehensive error handling with detailed error codes
+    - Extensive documentation with examples
+    - Security best practices implementation
+    - Scalable architecture design
+    - Full CRUD operations for all resources
+    
+  version: 2.0.0
+  contact:
+    name: DeDi Support
+    url: https://docs.dedi.global
+  license:
+    name: MIT
+    
+servers:
+  - url: https://api.dedi.global
+    description: Production server
+  - url: https://staging-api.dedi.global
+    description: Staging server
+
+security:
+  - BearerAuth: []
+  - CookieAuth: []
+
+paths:
+  # Authentication endpoints
+  /dedi/register:
+    post:
+      tags:
+        - Authentication
+      summary: Register or login user
+      description: |
+        Universal endpoint for user registration and login. Use 'action' parameter to specify operation.
+        - For registration: email, name, password, and action='register' required
+        - For login: email, password, and action='login' required
+        
+        **Password Requirements:**
+        - Minimum 6 characters
+        - Must include at least one special character (@$!%*?&)
+      operationId: registerLogin
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - action
+                - password
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: user@example.com
+                name:
+                  type: string
+                  example: John Doe
+                  description: Required for registration, optional for login
+                action:
+                  type: string
+                  enum: [register, login]
+                  example: register
+                password:
+                  type: string
+                  minLength: 6
+                  pattern: '^(?=.*[@$!%*?&]).*$'
+                  description: Password with at least 6 characters and one special character (@$!%*?&)
+                  example: Test@123
+            examples:
+              register:
+                summary: User registration
+                value:
+                  email: user@example.com
+                  name: John Doe
+                  action: register
+                  password: Test@123
+              login:
+                summary: User login
+                value:
+                  email: user@example.com
+                  action: login
+                  password: Test@123
+      responses:
+        '200':
+          description: Success - check email for verification link
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: Bad request - missing or invalid parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /dedi/verify-email:
+    get:
+      tags:
+        - Authentication
+      summary: Verify email with magic link token
+      description: Verifies user email using the token from the magic link sent via email
+      operationId: verifyEmail
+      security: []
+      parameters:
+        - name: token
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Email verification token from magic link
+          example: abc123xyz456
+      responses:
+        '200':
+          description: Email verified successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  data:
+                    type: object
+                    properties:
+                      refresh_token:
+                        type: string
+                        description: JWT refresh token for session management
+        '400':
+          description: Invalid or expired token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Token not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /dedi/auth/me:
+    get:
+      tags:
+        - Authentication
+      summary: Get current authenticated user
+      description: Retrieves information about the currently authenticated user
+      operationId: getCurrentUser
+      responses:
+        '200':
+          description: User information retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: User retrieved successfully
+                  data:
+                    $ref: '#/components/schemas/User'
+        '401':
+          description: Unauthorized - invalid or missing token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /dedi/token/refresh:
+    post:
+      tags:
+        - Authentication
+      summary: Refresh authentication token
+      description: Refreshes the authentication token using a valid refresh token
+      operationId: refreshToken
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - refresh_token
+              properties:
+                refresh_token:
+                  type: string
+                  description: Valid refresh token
+      responses:
+        '200':
+          description: Token refreshed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token:
+                    type: string
+                  refresh_token:
+                    type: string
+        '401':
+          description: Invalid or expired refresh token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /dedi/logout:
+    post:
+      tags:
+        - Authentication
+      summary: Logout user
+      description: Invalidates the current session and authentication tokens
+      operationId: logout
+      responses:
+        '200':
+          description: Logged out successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /dedi/reset-password:
+    post:
+      tags:
+        - Authentication
+      summary: Reset password (authenticated user)
+      description: |
+        Reset password for the currently authenticated user.
+        
+        **Password Requirements:**
+        - Minimum 6 characters
+        - Must include at least one special character (@$!%*?&)
+      operationId: resetPassword
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - new_password
+                - confirm_password
+              properties:
+                new_password:
+                  type: string
+                  minLength: 6
+                  pattern: '^(?=.*[@$!%*?&]).*$'
+                  description: New password meeting requirements
+                confirm_password:
+                  type: string
+                  minLength: 6
+                  pattern: '^(?=.*[@$!%*?&]).*$'
+                  description: Must match new_password
+      responses:
+        '200':
+          description: Password reset successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: Invalid password or missing parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized or incorrect old password
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /dedi/forgot-password:
+    post:
+      tags:
+        - Authentication
+      summary: Forgot password
+      description: |
+        Send a password reset link to the user's email address.
+        
+        **Process:**
+        1. Submit email address
+        2. Check email for reset link
+        3. Use reset link to access password reset form
+        4. Set new password via reset-password/confirm endpoint
+      operationId: forgotPassword
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+              properties:
+                email:
+                  type: string
+                  format: email
+                  description: Email address of the account
+                  example: user@example.com
+      responses:
+        '200':
+          description: Reset link sent to email
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: Invalid email format
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Email not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /dedi/reset-password/confirm:
+    post:
+      tags:
+        - Authentication
+      summary: Confirm password reset
+      description: |
+        Confirm password reset using the token received via email.
+        
+        **Password Requirements:**
+        - Minimum 6 characters
+        - Must include at least one special character (@$!%*?&)
+        
+        **Security:** Reset tokens expire after 15 minutes by default
+      operationId: confirmPasswordReset
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - token
+                - new_password
+              properties:
+                token:
+                  type: string
+                  description: Reset token from email link
+                new_password:
+                  type: string
+                  minLength: 6
+                  pattern: '^(?=.*[@$!%*?&]).*$'
+                  description: New password meeting requirements
+                  example: NewPass@123
+      responses:
+        '200':
+          description: Password reset confirmed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: Invalid or expired token, or invalid password
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /dedi/resend-magic-link:
+    post:
+      tags:
+        - Authentication
+      summary: Resend magic link
+      description: |
+        Resend email verification link for users who didn't receive or lost their verification email.
+        
+        **Prerequisites:**
+        - User must already be registered
+        - Account must exist in the system
+        
+        **Note:** This endpoint requires the user's existing credentials to prevent abuse
+      operationId: resendMagicLink
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - action
+                - email
+                - name
+                - password
+              properties:
+                action:
+                  type: string
+                  enum: [register]
+                  description: Should be 'register'
+                  example: register
+                email:
+                  type: string
+                  format: email
+                  description: Email address of the account
+                  example: user@example.com
+                name:
+                  type: string
+                  description: User's name
+                  example: John Doe
+                password:
+                  type: string
+                  description: User's password
+                  example: Test@123
+      responses:
+        '200':
+          description: Magic link resent successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: Invalid credentials or account not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /dedi/get-api-key:
+    get:
+      tags:
+        - Authentication
+      summary: Generate API key
+      description: Generates a new API key for authenticated user for programmatic access
+      operationId: getApiKey
+      responses:
+        '200':
+          description: API key generated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: API key generated
+                  data:
+                    type: object
+                    properties:
+                      api_key:
+                        type: string
+                        description: Generated API key for Bearer authentication
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # Publishing endpoints
+  /dedi/create-namespace:
+    post:
+      tags:
+        - Publishing
+      summary: Create a new namespace
+      description: |
+        Creates a new namespace to organize and group related registries.
+        Namespaces provide top-level organization for data segregation.
+      operationId: createNamespace
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - description
+              properties:
+                name:
+                  type: string
+                  description: Unique namespace name
+                  example: my-company
+                description:
+                  type: string
+                  description: Description of the namespace purpose
+                  example: Company employee registry namespace
+                meta:
+                  type: object
+                  description: Additional metadata
+                  example: {}
+                version_count:
+                  type: number
+                  description: Version number
+                  example: 1
+      responses:
+        '201':
+          description: Namespace created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Namespace created successfully
+                  data:
+                    $ref: '#/components/schemas/Namespace'
+        '400':
+          description: Bad request - invalid parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Conflict - namespace name already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /dedi/{namespace}/create-registry:
+    post:
+      tags:
+        - Publishing
+      summary: Create a new registry
+      description: |
+        Creates a new registry within a namespace with a defined schema for records.
+        Registries define the structure and validation rules for records.
+      operationId: createRegistry
+      parameters:
+        - name: namespace
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Namespace ID or domain name
+          example: my-company
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - description
+                - schema
+              properties:
+                name:
+                  type: string
+                  description: Unique registry name within namespace
+                  example: employees
+                description:
+                  type: string
+                  description: Registry description
+                  example: Employee records registry
+                schema:
+                  type: object
+                  description: JSON Schema for record validation
+                  example:
+                    type: object
+                    required: [name, email]
+                    properties:
+                      name:
+                        type: string
+                      email:
+                        type: string
+                        format: email
+                tag:
+                  type: string
+                  enum: [custom, membership, public_key, revoke]
+                  description: Schema tag for categorization
+                  example: custom
+                  default: custom
+                meta:
+                  type: object
+                  description: Additional metadata
+                  example: {}
+      responses:
+        '201':
+          description: Registry created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Registry created successfully
+                  data:
+                    $ref: '#/components/schemas/Registry'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Namespace not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /dedi/{namespace}/{registry_name}/save-draft:
+    post:
+      tags:
+        - Publishing
+      summary: Save record as draft
+      description: |
+        Saves a record as a draft without publishing. Drafts can be edited and later published.
+      operationId: saveRecordAsDraft
+      parameters:
+        - name: namespace
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Namespace ID or domain name
+        - name: registry_name
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Registry name
+        - name: publish
+          in: query
+          schema:
+            type: boolean
+          description: Set to true to save and publish immediately
+          example: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - details
+              properties:
+                name:
+                  type: string
+                  description: Unique record name within registry
+                  example: john-doe
+                description:
+                  type: string
+                  description: Record description
+                  example: John Doe employee record
+                details:
+                  type: object
+                  description: Record data conforming to registry schema
+                  example:
+                    name: John Doe
+                    email: john.doe@company.com
+                    department: Engineering
+                meta:
+                  type: object
+                  description: Additional metadata
+                  example: {}
+                valid_till:
+                  type: string
+                  format: date-time
+                  description: Expiration date in ISO format (optional)
+                  example: 2024-12-31T23:59:59Z
+                ttl:
+                  type: integer
+                  description: Time to live in seconds
+                  example: 86400
+      responses:
+        '201':
+          description: Draft saved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Draft saved successfully
+                  data:
+                    $ref: '#/components/schemas/Record'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Namespace or registry not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /dedi/{namespace}/{registry_name}/publish-record:
+    post:
+      tags:
+        - Publishing
+      summary: Publish record
+      description: |
+        Publishes a record directly or promotes a draft to live state.
+        Published records become available for lookup and queries.
+      operationId: publishRecord
+      parameters:
+        - name: namespace
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Namespace ID or domain name
+        - name: registry_name
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Registry name
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - details
+              properties:
+                name:
+                  type: string
+                  description: Unique record name within registry
+                description:
+                  type: string
+                  description: Record description
+                details:
+                  type: object
+                  description: Record data conforming to registry schema
+                meta:
+                  type: object
+                  description: Additional metadata
+                valid_till:
+                  type: string
+                  format: date-time
+                  description: Expiration date in ISO format (optional)
+                  example: 2024-12-31T23:59:59Z
+                ttl:
+                  type: integer
+                  description: Time to live in seconds
+      responses:
+        '201':
+          description: Record published successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Record published successfully
+                  data:
+                    $ref: '#/components/schemas/Record'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /dedi/{namespace}/{registry_name}/bulk-upload:
+    post:
+      tags:
+        - Publishing
+      summary: Bulk upload records
+      description: |
+        Uploads multiple records in a single operation. Returns a job ID for tracking progress.
+      operationId: bulkUploadRecords
+      parameters:
+        - name: namespace
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Namespace ID or domain name
+        - name: registry_name
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Registry name
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: CSV file containing record data
+      responses:
+        '202':
+          description: Bulk upload job started
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Bulk upload job started
+                  data:
+                    type: object
+                    properties:
+                      job_id:
+                        type: string
+                        description: Job ID for tracking progress
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /dedi/{namespace}/{registry_name}/export-records-as-csv:
+    get:
+      tags:
+        - Publishing
+      summary: Export records as CSV
+      description: |
+        Export all records from a registry as a CSV file for analysis, backup, or migration purposes.
+        
+        **CSV Format:**
+        - Headers match registry schema fields
+        - One row per record
+        - Includes record metadata (ID, timestamps, state)
+        - Nested objects flattened with dot notation
+        
+        **Performance:**
+        - Optimized for large datasets
+        - Streaming response for memory efficiency
+        - Suitable for registries with thousands of records
+        
+        **Access Control:**
+        - Requires registry read permissions
+        - User must be authorized for the registry
+      operationId: exportRecordsAsCsv
+      parameters:
+        - name: namespace
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Namespace ID or domain
+        - name: registry_name
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Registry name to export records from
+      responses:
+        '200':
+          description: CSV file with registry records
+          content:
+            text/csv:
+              schema:
+                type: string
+                format: binary
+              examples:
+                csv_export:
+                  summary: Sample CSV export
+                  value: |
+                    record_id,record_name,description,email,name,created_at,state
+                    rec_123,john-doe,Employee record,john@company.com,John Doe,2024-01-15T10:30:00Z,live
+                    rec_124,jane-smith,Employee record,jane@company.com,Jane Smith,2024-01-16T14:20:00Z,live
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Namespace or registry not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /dedi/jobs/{job_id}:
+    get:
+      tags:
+        - Publishing
+      summary: Get job status
+      description: Retrieves the status and progress of a bulk upload job
+      operationId: getJobStatus
+      parameters:
+        - name: job_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Job ID from bulk upload
+      responses:
+        '200':
+          description: Job status retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Job status retrieved
+                  data:
+                    $ref: '#/components/schemas/JobStatus'
+        '404':
+          description: Job not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /dedi/jobs:
+    get:
+      tags:
+        - Publishing
+      summary: Get user jobs
+      description: Retrieves all jobs for the authenticated user
+      operationId: getUserJobs
+      responses:
+        '200':
+          description: User jobs retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Jobs retrieved
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/JobStatus'
+
+  # Delegation endpoints
+  /dedi/{namespace}/{registry_name}/add-delegate:
+    post:
+      tags:
+        - Delegation
+      summary: Add registry delegate
+      description: |
+        Adds a delegate user who can manage records in the registry.
+        Delegates have permissions to create, update, and manage records.
+      operationId: addRegistryDelegate
+      parameters:
+        - name: namespace
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Namespace ID or domain name
+        - name: registry_name
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Registry name
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - delegate_email
+              properties:
+                delegate_email:
+                  type: string
+                  format: email
+                  description: Email of user to add as delegate
+                  example: delegate@example.com
+      responses:
+        '200':
+          description: Delegate added successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Registry or user not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /dedi/{namespace}/{registry_name}/remove-delegate:
+    post:
+      tags:
+        - Delegation
+      summary: Remove registry delegate
+      description: |
+        Removes a delegate user from the registry, revoking their permissions to manage records.
+      operationId: removeRegistryDelegate
+      parameters:
+        - name: namespace
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Namespace ID or domain name
+        - name: registry_name
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Registry name
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - delegate_email
+              properties:
+                delegate_email:
+                  type: string
+                  format: email
+                  description: Email of delegate user to remove
+                  example: delegate@example.com
+      responses:
+        '200':
+          description: Delegate removed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Registry, delegate, or user not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # Domain verification endpoints
+  /dedi/generate-txt/{namespace}:
+    get:
+      tags:
+        - Domain Verification
+      summary: Generate TXT record
+      description: |
+        Generates a DNS TXT record for domain verification.
+        Used to verify ownership of a domain for namespace binding.
+      operationId: generateTxtRecord
+      parameters:
+        - name: namespace
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Namespace ID or domain name
+      responses:
+        '200':
+          description: TXT record generated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: TXT record generated
+                  data:
+                    type: object
+                    properties:
+                      txt_record:
+                        type: string
+                        description: DNS TXT record to add to domain
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /dedi/verify-domain:
+    post:
+      tags:
+        - Domain Verification
+      summary: Verify domain ownership
+      description: |
+        Verifies domain ownership by checking the DNS TXT record.
+        Must be called after adding the TXT record to domain DNS.
+      operationId: verifyDomain
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - namespace
+                - domain
+              properties:
+                namespace:
+                  type: string
+                  description: Namespace ID
+                domain:
+                  type: string
+                  description: Domain to verify
+                  example: example.com
+      responses:
+        '200':
+          description: Domain verified successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: Verification failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /dedi/check-verification/{namespace}:
+    get:
+      tags:
+        - Domain Verification
+      summary: Check domain verification status
+      description: |
+        Checks the current domain verification status for a namespace.
+      operationId: checkDomainVerification
+      parameters:
+        - name: namespace
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Namespace ID or domain name
+      responses:
+        '200':
+          description: Verification status retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Verification status retrieved
+                  data:
+                    type: object
+                    properties:
+                      verified:
+                        type: boolean
+                        description: Whether domain is verified
+                      domain:
+                        type: string
+                        description: Verified domain
+        '404':
+          description: Namespace not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /dedi/verify-namespace-lookup:
+    post:
+      tags:
+        - Verification & Lookup
+      summary: Verify namespace lookup
+      description: |
+        Verify the authenticity and integrity of a namespace lookup result.
+
+        **Authentication:** Required (Cookie or API Key)
+
+        **Request Body:**
+        ```json
+        {
+          "namespace_lookup_response": { "message": "...", "data": { /* lookup response */ } }
+        }
+        ```
+      operationId: verifyNamespaceLookup
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - namespace_lookup_response
+              properties:
+                namespace_lookup_response:
+                  type: object
+                  description: Full response body from namespace lookup API
+      responses:
+        '200':
+          description: Namespace lookup verified successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: Verification failed or invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Namespace not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /dedi/verify-registry-lookup:
+    post:
+      tags:
+        - Verification & Lookup
+      summary: Verify registry lookup
+      description: |
+        Verify the authenticity and integrity of a registry lookup result.
+
+        **Authentication:** Required (Cookie or API Key)
+
+        **Request Body:**
+        ```json
+        {
+          "registry_lookup_response": { "message": "...", "data": { /* lookup response */ } }
+        }
+        ```
+      operationId: verifyRegistryLookup
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - registry_lookup_response
+              properties:
+                registry_lookup_response:
+                  type: object
+                  description: Full response body from registry lookup API
+      responses:
+        '200':
+          description: Registry lookup verified successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: Verification failed or invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Registry not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /dedi/verify-record-lookup:
+    post:
+      tags:
+        - Verification & Lookup
+      summary: Verify record lookup
+      description: |
+        Verify the authenticity and integrity of a record lookup result.
+
+        **Authentication:** Required (Cookie or API Key)
+
+        **Request Body:**
+        ```json
+        {
+          "record_lookup_response": { "message": "...", "data": { /* lookup response */ } }
+        }
+        ```
+      operationId: verifyRecordLookup
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - record_lookup_response
+              properties:
+                record_lookup_response:
+                  type: object
+                  description: Full response body from record lookup API
+      responses:
+        '200':
+          description: Record lookup verified successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: Verification failed or invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Record not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # Update endpoints
+  /dedi/{namespace}/update-namespace:
+    post:
+      tags:
+        - Updates
+      summary: Update namespace
+      description: |
+        Updates namespace information such as description and metadata.
+        The namespace name cannot be changed after creation.
+      operationId: updateNamespace
+      parameters:
+        - name: namespace
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Namespace ID or domain name
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                description:
+                  type: string
+                  description: Updated description
+                meta:
+                  type: object
+                  description: Updated metadata
+      responses:
+        '200':
+          description: Namespace updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Namespace not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /dedi/{namespace}/{registry_name}/update-registry:
+    post:
+      tags:
+        - Updates
+      summary: Update registry
+      description: |
+        Updates registry information including description, schema, and metadata.
+        Schema updates must be backward compatible.
+      operationId: updateRegistry
+      parameters:
+        - name: namespace
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Namespace ID or domain name
+        - name: registry_name
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Registry name
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                description:
+                  type: string
+                  description: Updated description
+                schema:
+                  type: object
+                  description: Updated JSON Schema (must be backward compatible)
+                meta:
+                  type: object
+                  description: Updated metadata
+      responses:
+        '200':
+          description: Registry updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /dedi/{namespace}/{registry_name}/{record_name}/update-record:
+    post:
+      tags:
+        - Updates
+      summary: Update record
+      description: |
+        Updates record information including description, details, and metadata.
+        Creates a new version of the record while preserving history.
+      operationId: updateRecord
+      parameters:
+        - name: namespace
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Namespace ID or domain name
+        - name: registry_name
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Registry name
+        - name: record_name
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Record name
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                description:
+                  type: string
+                  description: Updated description
+                details:
+                  type: object
+                  description: Updated record data
+                meta:
+                  type: object
+                  description: Updated metadata
+                valid_till:
+                  type: string
+                  format: date-time
+                  description: Updated expiration date in ISO format
+                  example: 2024-12-31T23:59:59Z
+                ttl:
+                  type: integer
+                  description: Updated time to live in seconds
+      responses:
+        '200':
+          description: Record updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # State management endpoints
+  /dedi/{namespace}/{registry_name}/revoke-registry:
+    post:
+      tags:
+        - State Management
+      summary: Revoke registry
+      description: |
+        Permanently revokes a registry, making it invalid and preventing new record creation.
+        This action is irreversible.
+      operationId: revokeRegistry
+      parameters:
+        - name: namespace
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Namespace ID or domain name
+        - name: registry_name
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Registry name to revoke
+      responses:
+        '200':
+          description: Registry revoked successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Registry has been revoked
+        '404':
+          description: Registry not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /dedi/{namespace}/{registry_name}/reinstate-registry:
+    post:
+      tags:
+        - State Management
+      summary: Reinstate registry
+      description: |
+        Reinstates a previously revoked registry, making it active again for new record creation.
+      operationId: reinstateRegistry
+      parameters:
+        - name: namespace
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Namespace ID or domain name
+        - name: registry_name
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Registry name to reinstate
+      responses:
+        '200':
+          description: Registry reinstated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Registry has been reinstated
+        '404':
+          description: Registry not found or not in revoked state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /dedi/{namespace}/{registry_name}/archive-registry:
+    post:
+      tags:
+        - State Management
+      summary: Archive registry
+      description: |
+        Archives a registry, making it read-only while preserving existing records.
+        No new records can be created in archived registries.
+      operationId: archiveRegistry
+      parameters:
+        - name: namespace
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Namespace ID or domain name
+        - name: registry_name
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Registry name to archive
+      responses:
+        '200':
+          description: Registry archived successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Registry has been archived
+        '404':
+          description: Registry not found, already archived, or revoked
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /dedi/{namespace}/{registry_name}/restore-registry:
+    post:
+      tags:
+        - State Management
+      summary: Restore registry
+      description: |
+        Restores a previously archived registry, making it active again for record creation.
+      operationId: restoreRegistry
+      parameters:
+        - name: namespace
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Namespace ID or domain name
+        - name: registry_name
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Registry name to restore
+      responses:
+        '200':
+          description: Registry restored successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Registry has been restored
+        '404':
+          description: Registry not found or not in archived state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /dedi/{namespace}/{registry_name}/{record_name}/suspend-record:
+    post:
+      tags:
+        - State Management
+      summary: Suspend record
+      description: |
+        Temporarily suspends a record, making it inactive while preserving its data.
+        Suspended records can be reinstated.
+      operationId: suspendRecord
+      parameters:
+        - name: namespace
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Namespace ID or domain name
+        - name: registry_name
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Registry name containing the record
+        - name: record_name
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Record name to suspend
+      responses:
+        '200':
+          description: Record suspended successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Record has been suspended
+        '404':
+          description: Record not found or cannot be suspended
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /dedi/{namespace}/{registry_name}/{record_name}/reinstate-record:
+    post:
+      tags:
+        - State Management
+      summary: Reinstate record
+      description: |
+        Reinstates a previously suspended record, making it active and available for queries again.
+      operationId: reinstateRecord
+      parameters:
+        - name: namespace
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Namespace ID or domain name
+        - name: registry_name
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Registry name containing the record
+        - name: record_name
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Record name to reinstate
+      responses:
+        '200':
+          description: Record reinstated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Record has been reinstated
+        '404':
+          description: Record not found, already active, or cannot be reinstated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /dedi/{namespace}/{registry_name}/{record_name}/revoke-record:
+    post:
+      tags:
+        - State Management
+      summary: Revoke record
+      description: |
+        Permanently revokes a record, making it invalid and preventing any future use.
+        This action is irreversible.
+      operationId: revokeRecord
+      parameters:
+        - name: namespace
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Namespace ID or domain name
+        - name: registry_name
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Registry name containing the record
+        - name: record_name
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Record name to revoke
+      responses:
+        '200':
+          description: Record revoked successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Record has been revoked
+        '404':
+          description: Record not found or already expired
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /dedi/{namespace}/{registry_name}/{record_name}/change-record-state:
+    post:
+      tags:
+        - State Management
+      summary: Change record state
+      description: |
+        Changes the state of a record to a specified value (LIVE, SUSPENDED, REVOKED, EXPIRED).
+        This is a low-level API for advanced state management.
+      operationId: changeRecordState
+      parameters:
+        - name: namespace
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Namespace ID or domain name
+        - name: registry_name
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Registry name containing the record
+        - name: record_name
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Record name to change state for
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - state
+              properties:
+                state:
+                  type: string
+                  enum: [LIVE, SUSPENDED, REVOKED, EXPIRED]
+                  description: New state for the record
+                  example: SUSPENDED
+      responses:
+        '200':
+          description: Record state changed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Record state has been changed to SUSPENDED
+        '400':
+          description: Invalid state or missing parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Record not found or state cannot be changed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # Access endpoints
+  /dedi/lookup/{namespace}:
+    get:
+      tags:
+        - Access
+      summary: Namespace lookup
+      description: |
+        Retrieves detailed information about a specific namespace including metadata and configuration.
+      operationId: lookupNamespace
+      parameters:
+        - name: namespace
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Namespace ID or domain name
+        - name: version_id
+          in: query
+          schema:
+            type: string
+          description: Specific version to retrieve
+        - name: as_on
+          in: query
+          schema:
+            type: string
+            format: date
+          description: Historical lookup date (YYYY-MM-DD)
+      responses:
+        '200':
+          description: Namespace retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Resource retrieved successfully
+                  data:
+                    $ref: '#/components/schemas/Namespace'
+        '404':
+          description: Namespace not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /dedi/lookup/{namespace}/{registry_name}:
+    get:
+      tags:
+        - Access
+      summary: Registry lookup
+      description: |
+        Retrieves detailed information about a specific registry including schema and configuration.
+      operationId: lookupRegistry
+      parameters:
+        - name: namespace
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Namespace ID or domain name
+        - name: registry_name
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Registry name
+        - name: version_id
+          in: query
+          schema:
+            type: string
+          description: Specific version to retrieve
+        - name: as_on
+          in: query
+          schema:
+            type: string
+            format: date
+          description: Historical lookup date (YYYY-MM-DD)
+      responses:
+        '200':
+          description: Registry retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Resource retrieved successfully
+                  data:
+                    $ref: '#/components/schemas/Registry'
+        '404':
+          description: Registry not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /dedi/lookup/{namespace}/{registry_name}/{record_name}:
+    get:
+      tags:
+        - Access
+      summary: Record lookup
+      description: |
+        Retrieves detailed information about a specific record including data and metadata.
+      operationId: lookupRecord
+      parameters:
+        - name: namespace
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Namespace ID or domain name
+        - name: registry_name
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Registry name containing the record
+        - name: record_name
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Record name to lookup
+        - name: version_id
+          in: query
+          schema:
+            type: string
+          description: Specific version to retrieve
+        - name: as_on
+          in: query
+          schema:
+            type: string
+            format: date
+          description: Historical lookup date (YYYY-MM-DD)
+      responses:
+        '200':
+          description: Record retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Resource retrieved successfully
+                  data:
+                    $ref: '#/components/schemas/Record'
+        '404':
+          description: Record not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # Query endpoints
+  /dedi/query/{namespace}:
+    get:
+      tags:
+        - Query
+      summary: Query namespace registries
+      description: |
+        Queries all registries within a namespace with filtering and pagination support.
+      operationId: queryNamespaceRegistries
+      parameters:
+        - name: namespace
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Namespace ID or domain name
+        - name: from
+          in: query
+          schema:
+            type: string
+            format: date
+          description: Filter registries updated from date (YYYY-MM-DD)
+        - name: to
+          in: query
+          schema:
+            type: string
+            format: date
+          description: Filter registries updated to date (YYYY-MM-DD)
+        - name: state
+          in: query
+          schema:
+            type: string
+            enum: [revoked, suspended, expired]
+          description: Filter by registry state
+        - name: name
+          in: query
+          schema:
+            type: string
+          description: Search by registry name (minimum 3 characters)
+        - name: sort
+          in: query
+          schema:
+            type: string
+            enum: [date, state, name]
+          description: Sort results
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+          description: Page number for pagination
+        - name: page_size
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+          description: Items per page
+        - name: as_on
+          in: query
+          schema:
+            type: string
+            format: date
+          description: Historical query date (YYYY-MM-DD)
+      responses:
+        '200':
+          description: Registries retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Resource retrieved successfully
+                  data:
+                    type: object
+                    properties:
+                      namespace_id:
+                        type: string
+                      namespace_name:
+                        type: string
+                      total_registries:
+                        type: integer
+                      page_number:
+                        type: integer
+                      page_size:
+                        type: integer
+                      registries:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/RegistrySummary'
+        '404':
+          description: Namespace not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /dedi/query/{namespace}/{registry_name}:
+    get:
+      tags:
+        - Query
+      summary: Query registry records
+      description: |
+        Queries all records within a registry with filtering and pagination support.
+      operationId: queryRegistryRecords
+      parameters:
+        - name: namespace
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Namespace ID or domain name
+        - name: registry_name
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Registry name to query
+        - name: from
+          in: query
+          schema:
+            type: string
+            format: date
+          description: Filter records updated from date (YYYY-MM-DD)
+        - name: to
+          in: query
+          schema:
+            type: string
+            format: date
+          description: Filter records updated to date (YYYY-MM-DD)
+        - name: state
+          in: query
+          schema:
+            type: string
+            enum: [revoked, suspended, expired]
+          description: Filter by record state
+        - name: name
+          in: query
+          schema:
+            type: string
+          description: Search by record name (minimum 3 characters)
+        - name: sort
+          in: query
+          schema:
+            type: string
+            enum: [date, state, name]
+          description: Sort results
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+          description: Page number for pagination
+        - name: page_size
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+          description: Items per page
+        - name: as_on
+          in: query
+          schema:
+            type: string
+            format: date
+          description: Historical query date (YYYY-MM-DD)
+      responses:
+        '200':
+          description: Records retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Resource retrieved successfully
+                  data:
+                    type: object
+                    properties:
+                      namespace_id:
+                        type: string
+                      namespace_name:
+                        type: string
+                      registry_id:
+                        type: string
+                      registry_name:
+                        type: string
+                      total_records:
+                        type: integer
+                      page_number:
+                        type: integer
+                      page_size:
+                        type: integer
+                      records:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/RecordSummary'
+
+  # Version endpoints
+  /dedi/versions/{namespace}:
+    get:
+      tags:
+        - Versions
+      summary: Get namespace versions
+      description: |
+        Retrieves all available versions for a specific namespace.
+      operationId: getNamespaceVersions
+      parameters:
+        - name: namespace
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Namespace ID or domain name
+      responses:
+        '200':
+          description: Namespace versions retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Resource retrieved successfully
+                  data:
+                    type: object
+                    properties:
+                      created_by:
+                        type: string
+                      created_at:
+                        type: string
+                        format: date-time
+                      updated_at:
+                        type: string
+                        format: date-time
+                      total_versions:
+                        type: integer
+                      versions:
+                        type: array
+                        items:
+                          type: string
+                        example: ["v1.2.3", "v1.2.2", "v1.2.1"]
+                      ttl:
+                        type: integer
+        '404':
+          description: Namespace not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /dedi/versions/{namespace}/{registry_name}:
+    get:
+      tags:
+        - Versions
+      summary: Get registry versions
+      description: |
+        Retrieves all available versions for a specific registry.
+      operationId: getRegistryVersions
+      parameters:
+        - name: namespace
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Namespace ID or domain name
+        - name: registry_name
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Registry name
+      responses:
+        '200':
+          description: Registry versions retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Resource retrieved successfully
+                  data:
+                    type: object
+                    properties:
+                      registry_name:
+                        type: string
+                      created_by:
+                        type: string
+                      schema:
+                        type: object
+                      created_at:
+                        type: string
+                        format: date-time
+                      updated_at:
+                        type: string
+                        format: date-time
+                      total_versions:
+                        type: integer
+                      versions:
+                        type: array
+                        items:
+                          type: string
+                        example: ["v1.2.1", "v1.2.0", "v1.1.0"]
+                      ttl:
+                        type: integer
+
+  /dedi/versions/{namespace}/{registry_name}/{record_name}:
+    get:
+      tags:
+        - Versions
+      summary: Get record versions
+      description: |
+        Retrieves all available versions for a specific record.
+      operationId: getRecordVersions
+      parameters:
+        - name: namespace
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Namespace ID or domain name
+        - name: registry_name
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Registry name containing the record
+        - name: record_name
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Record name
+      responses:
+        '200':
+          description: Record versions retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Resource retrieved successfully
+                  data:
+                    type: object
+                    properties:
+                      created_by:
+                        type: string
+                      schema:
+                        type: object
+                      created_at:
+                        type: string
+                        format: date-time
+                      updated_at:
+                        type: string
+                        format: date-time
+                      total_versions:
+                        type: integer
+                      versions:
+                        type: array
+                        items:
+                          type: string
+                        example: ["v2.1.0", "v2.0.1", "v2.0.0", "v1.0.0"]
+                      ttl:
+                        type: integer
+
+  # Advanced Search endpoints
+  /dedi/search/{namespace}:
+    get:
+      tags:
+        - Search
+      summary: Advanced record search
+      description: |
+        Powerful search functionality across all records in a namespace with support for nested field searching and flexible filtering.
+        
+        **Search Capabilities:**
+        - Registry filtering by name
+        - Record name search with partial matching
+        - Direct field search in record details
+        - Nested field search using dot notation
+        - Multiple criteria combination
+        - Case-insensitive partial matching
+        
+        **Field Search Examples:**
+        - Basic fields: `email`, `publicKey`, `phone`, `name`
+        - Nested fields: `detail.address`, `profile.name`, `contact.email`
+        - Deep nesting: `data.user.profile.settings.theme`
+      operationId: searchRecords
+      parameters:
+        - name: namespace
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Namespace ID or domain name to search within
+        - name: registry_name
+          in: query
+          schema:
+            type: string
+          description: Filter by registry name (partial match)
+        - name: record_name
+          in: query
+          schema:
+            type: string
+          description: Search by record name (partial match)
+        - name: email
+          in: query
+          schema:
+            type: string
+          description: Search by email field in record details
+        - name: publicKey
+          in: query
+          schema:
+            type: string
+          description: Search by publicKey field in record details
+        # Dynamic parameters for nested field search
+        # Note: OpenAPI doesn't support truly dynamic parameters, but we document common ones
+        - name: detail.address
+          in: query
+          schema:
+            type: string
+          description: Example - Search nested field using dot notation
+        - name: profile.name
+          in: query
+          schema:
+            type: string
+          description: Example - Search deeply nested field
+      responses:
+        '200':
+          description: Search results retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Search results
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        record_id:
+                          type: string
+                        record_name:
+                          type: string
+                        registry_name:
+                          type: string
+                        namespace_id:
+                          type: string
+                        description:
+                          type: string
+                        details:
+                          type: object
+                          description: Record data that can contain any fields
+                        state:
+                          type: string
+                        created_at:
+                          type: string
+                          format: date-time
+                        updated_at:
+                          type: string
+                          format: date-time
+                        version:
+                          type: string
+                        ttl:
+                          type: integer
+        '400':
+          description: Missing namespace parameter
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized - invalid or missing token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Namespace not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Query failed or database error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # Statistics endpoints
+  /dedi/stats:
+    get:
+      tags:
+        - Statistics
+      summary: Get platform statistics
+      description: |
+        Retrieves comprehensive real-time statistics for the entire DeDi platform,
+        providing insights into platform usage and growth.
+        
+        **Statistics Include:**
+        - Total registered user accounts
+        - Total namespaces across all users
+        - Total registries across all namespaces
+        - Total records across all registries
+        
+        **Public Endpoint** - No authentication required.
+      operationId: getPlatformStatistics
+      security: []
+      responses:
+        '200':
+          description: Platform statistics retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  totalUsers:
+                    type: integer
+                    description: Total number of registered user accounts
+                    example: 1250
+                  totalNamespaces:
+                    type: integer
+                    description: Total number of namespaces across all users
+                    example: 456
+                  totalRegistries:
+                    type: integer
+                    description: Total number of registries across all namespaces
+                    example: 1823
+                  totalRecords:
+                    type: integer
+                    description: Total number of records across all registries
+                    example: 15467
+        '500':
+          description: Database connection error or internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # Watch & Notifications endpoints
+  /dedi/watch:
+    post:
+      tags:
+        - Watch & Notifications
+      summary: Subscribe to watch notifications
+      description: |
+        Subscribe to receive notifications when changes occur to namespaces, registries, or records.
+        
+        **Supported Watch Types:**
+        - `namespace`: Watch all changes within a namespace
+        - `registry`: Watch all changes within a specific registry
+        - `record`: Watch changes to a specific record
+        
+        **Notification Methods:**
+        - Webhook URL (HTTP POST with change details)
+        - Real-time events (if supported by client)
+        
+        **Use Cases:**
+        - Monitor data changes for compliance
+        - Trigger automated workflows
+        - Real-time synchronization
+        - Audit trail generation
+      operationId: subscribeToWatch
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - watch_type
+                - target_id
+                - webhook_url
+              properties:
+                watch_type:
+                  type: string
+                  enum: [namespace, registry, record]
+                  description: Type of resource to watch
+                  example: namespace
+                target_id:
+                  type: string
+                  description: ID of the resource to watch (namespace ID, registry ID, or record ID)
+                  example: ns_12345
+                webhook_url:
+                  type: string
+                  format: uri
+                  description: Webhook URL to receive notifications
+                  example: https://your-app.com/webhook/dedi-updates
+                events:
+                  type: array
+                  items:
+                    type: string
+                    enum: [create, update, delete, state_change]
+                  description: Specific events to watch (optional, defaults to all)
+                  example: [create, update]
+      responses:
+        '201':
+          description: Watch subscription created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Watch subscription created
+                  data:
+                    type: object
+                    properties:
+                      subscription_id:
+                        type: string
+                        description: Unique subscription ID for management
+                        example: sub_67890
+                      watch_type:
+                        type: string
+                      target_id:
+                        type: string
+                      webhook_url:
+                        type: string
+                      created_at:
+                        type: string
+                        format: date-time
+        '400':
+          description: Invalid watch parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Target resource not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /dedi/watch/{subscription_id}:
+    delete:
+      tags:
+        - Watch & Notifications
+      summary: Unsubscribe from watch notifications
+      description: |
+        Unsubscribe from watch notifications by providing the subscription ID.
+        This will stop all future notifications for the specified watch.
+      operationId: unsubscribeFromWatch
+      parameters:
+        - name: subscription_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Watch subscription ID to remove
+          example: sub_67890
+      responses:
+        '200':
+          description: Watch subscription removed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '404':
+          description: Subscription not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /dedi/watch/subscriptions:
+    get:
+      tags:
+        - Watch & Notifications
+      summary: List user's watch subscriptions
+      description: |
+        Retrieves all active watch subscriptions for the authenticated user.
+        Includes subscription details and status information.
+      operationId: getUserWatchSubscriptions
+      responses:
+        '200':
+          description: Watch subscriptions retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Watch subscriptions retrieved
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        subscription_id:
+                          type: string
+                        watch_type:
+                          type: string
+                        target_id:
+                          type: string
+                        target_name:
+                          type: string
+                          description: Human-readable name of the watched resource
+                        webhook_url:
+                          type: string
+                        events:
+                          type: array
+                          items:
+                            type: string
+                        created_at:
+                          type: string
+                          format: date-time
+                        last_notification:
+                          type: string
+                          format: date-time
+                          nullable: true
+                        status:
+                          type: string
+                          enum: [active, paused, error]
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: API key authentication using Bearer token
+    CookieAuth:
+      type: apiKey
+      in: cookie
+      name: token
+      description: Cookie-based authentication for browser integration
+
+  schemas:
+    User:
+      type: object
+      properties:
+        user_id:
+          type: string
+          description: Unique user identifier
+        email:
+          type: string
+          format: email
+          description: User email address
+        name:
+          type: string
+          description: User display name
+        created_at:
+          type: string
+          format: date-time
+          description: User registration timestamp
+        updated_at:
+          type: string
+          format: date-time
+          description: Last update timestamp
+        verified:
+          type: boolean
+          description: Email verification status
+        last_login:
+          type: string
+          format: date-time
+          nullable: true
+          description: Last login timestamp
+
+    Namespace:
+      type: object
+      properties:
+        namespace_id:
+          type: string
+          description: Unique namespace identifier
+        name:
+          type: string
+          description: Namespace name
+        description:
+          type: string
+          description: Namespace description
+        digest:
+          type: string
+          description: Cryptographic digest of namespace data
+        meta:
+          type: object
+          description: Additional metadata
+        version:
+          type: string
+          description: Current version
+        version_count:
+          type: integer
+          description: Total number of versions
+        created_at:
+          type: string
+          format: date-time
+          description: Creation timestamp
+        updated_at:
+          type: string
+          format: date-time
+          description: Last update timestamp
+        created_by:
+          type: string
+          description: Creator user ID
+        domain:
+          type: string
+          description: Verified domain (if any)
+        state:
+          type: string
+          enum: [active, archived, revoked]
+          description: Current namespace state
+        ttl:
+          type: integer
+          description: Time to live in seconds
+
+    Registry:
+      type: object
+      properties:
+        registry_id:
+          type: string
+          description: Unique registry identifier
+        registry_name:
+          type: string
+          description: Registry name
+        namespace_id:
+          type: string
+          description: Parent namespace ID
+        description:
+          type: string
+          description: Registry description
+        digest:
+          type: string
+          description: Cryptographic digest of registry data
+        schema:
+          type: object
+          description: JSON Schema for record validation
+        meta:
+          type: object
+          description: Additional metadata
+        version:
+          type: string
+          description: Current version
+        version_count:
+          type: integer
+          description: Total number of versions
+        created_at:
+          type: string
+          format: date-time
+          description: Creation timestamp
+        updated_at:
+          type: string
+          format: date-time
+          description: Last update timestamp
+        created_by:
+          type: string
+          description: Creator user ID
+        state:
+          type: string
+          enum: [active, archived, revoked]
+          description: Current registry state
+        ttl:
+          type: integer
+          description: Time to live in seconds
+
+    Record:
+      type: object
+      properties:
+        record_id:
+          type: string
+          description: Unique record identifier
+        record_name:
+          type: string
+          description: Record name
+        registry_id:
+          type: string
+          description: Parent registry ID
+        registry_name:
+          type: string
+          description: Parent registry name
+        namespace_id:
+          type: string
+          description: Parent namespace ID
+        namespace:
+          type: string
+          description: Parent namespace name
+        description:
+          type: string
+          description: Record description
+        digest:
+          type: string
+          description: Cryptographic digest of record data
+        details:
+          type: object
+          description: Record data conforming to registry schema
+        meta:
+          type: object
+          description: Additional metadata
+        version:
+          type: string
+          description: Current version
+        version_count:
+          type: integer
+          description: Total number of versions
+        genesis:
+          type: string
+          description: Original version digest
+        created_at:
+          type: string
+          format: date-time
+          description: Creation timestamp
+        updated_at:
+          type: string
+          format: date-time
+          description: Last update timestamp
+        created_by:
+          type: string
+          description: Creator user ID
+        state:
+          type: string
+          enum: [draft, live, suspended, revoked, expired]
+          description: Current record state
+        valid_till:
+          type: string
+          format: date-time
+          nullable: true
+          description: Record expiration timestamp
+        ttl:
+          type: integer
+          description: Time to live in seconds
+
+    RegistrySummary:
+      type: object
+      properties:
+        registry_id:
+          type: string
+        registry_name:
+          type: string
+        description:
+          type: string
+        digest:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        state:
+          type: string
+        record_count:
+          type: integer
+        ttl:
+          type: integer
+
+    RecordSummary:
+      type: object
+      properties:
+        record_id:
+          type: string
+        record_name:
+          type: string
+        digest:
+          type: string
+        description:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        state:
+          type: string
+        ttl:
+          type: integer
+
+    JobStatus:
+      type: object
+      properties:
+        job_id:
+          type: string
+          description: Unique job identifier
+        job_type:
+          type: string
+          description: Type of job (e.g., bulk_upload)
+        status:
+          type: string
+          enum: [pending, running, completed, failed]
+          description: Current job status
+        progress:
+          type: object
+          properties:
+            total:
+              type: integer
+              description: Total number of items to process
+            processed:
+              type: integer
+              description: Number of items processed
+            failed:
+              type: integer
+              description: Number of items that failed
+        result:
+          type: object
+          description: Job result data (when completed)
+        error:
+          type: string
+          description: Error message (if failed)
+        created_at:
+          type: string
+          format: date-time
+          description: Job creation timestamp
+        updated_at:
+          type: string
+          format: date-time
+          description: Last update timestamp
+
+    SuccessResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          description: Success message
+          example: Operation completed successfully
+        data:
+          type: object
+          description: Response data (optional)
+
+    ErrorResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          description: Error message
+          example: An error occurred
+        error:
+          type: string
+          description: Detailed error information
+          example: Invalid request parameters
+        code:
+          type: string
+          description: Error code
+          example: INVALID_REQUEST
+
+    WatchSubscription:
+      type: object
+      properties:
+        subscription_id:
+          type: string
+          description: Unique subscription identifier
+          example: sub_67890
+        watch_type:
+          type: string
+          enum: [namespace, registry, record]
+          description: Type of resource being watched
+        target_id:
+          type: string
+          description: ID of the watched resource
+        target_name:
+          type: string
+          description: Human-readable name of the watched resource
+        webhook_url:
+          type: string
+          format: uri
+          description: Webhook URL for notifications
+        events:
+          type: array
+          items:
+            type: string
+            enum: [create, update, delete, state_change]
+          description: Events being watched
+        created_at:
+          type: string
+          format: date-time
+          description: Subscription creation timestamp
+        last_notification:
+          type: string
+          format: date-time
+          nullable: true
+          description: Last notification sent timestamp
+        status:
+          type: string
+          enum: [active, paused, error]
+          description: Current subscription status
+        notification_count:
+          type: integer
+          description: Total number of notifications sent
+
+tags:
+  - name: Authentication
+    description: User authentication and session management
+  - name: Publishing
+    description: Create and manage namespaces, registries, and records
+  - name: Delegation
+    description: Manage user permissions and delegation
+  - name: Domain Verification
+    description: Domain ownership verification for namespaces
+  - name: Updates
+    description: Update existing namespaces, registries, and records
+  - name: State Management
+    description: Manage lifecycle states of registries and records
+  - name: Access
+    description: Lookup and retrieve individual resources
+  - name: Query
+    description: Query collections of resources with filtering
+  - name: Versions
+    description: Access version history of resources
+  - name: Search
+    description: Advanced search across records
+  - name: Statistics
+    description: Platform usage statistics and analytics
+  - name: Watch & Notifications
+    description: Real-time change notifications and webhooks
