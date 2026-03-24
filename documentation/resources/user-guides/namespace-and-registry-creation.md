@@ -4,7 +4,7 @@
 
 Dedi.global is a ready to use SaaS implementing the open [DeDi protocol](https://github.com/LF-Decentralized-Trust-labs/DeDi) offered by the Network for Humanity Foundation. This allows registrars to effortlessly publish and manage their directories (aka public registries) on a robust decentralized infrastructure.
 
-A **namespace** corresponds to a domain (and implicitly its organisation), serving as the starting point for trust. Think of it as the digital “root” under which all directories and records for that organization live.
+> A **namespace** corresponds to a domain (and implicitly its organisation), serving as the starting point for trust. Think of it as the digital “root” under which all directories and records for that organization live.
 
 The following are the steps to create a namespace.
 
@@ -19,7 +19,7 @@ The following are the steps to create a namespace.
    3. Copy the generated TXT record as it needs to be updated in the DNS configuration file of your domain.
    4. Click “Verify” after you have successfully updated the domain’s DNS file.
 
-A **directory** is a **list of records with a configurable schema**, essentially the structured container of public information (like a registry of network participants or sanctioned entities) that sits under a namespace. **The terms directory and registry are to be understood as equivalent and may be used interchangeably.**
+> A **directory** is a **list of records with a configurable schema**, essentially the structured container of public information (like a registry of network participants or sanctioned entities) that sits under a namespace. **The terms directory and registry are to be understood as equivalent and may be used interchangeably.**
 
 6. Users can create directories (aka public registries) in a namespace. Create a registry by providing name, description and selecting a schema from the list of templates available.
    1. List of schema templates available include: Membership, Public Key, Revocation, and Beckn One.
