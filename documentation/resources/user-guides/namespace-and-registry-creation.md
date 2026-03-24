@@ -11,15 +11,13 @@ The following are the steps to create a namespace.
 1. Users can register using (any) email to create a namespace.
    * By default users have access to create multiple namespaces, and registries, and records within. Users can create multiple namespaces (similar to how they can own multiple domains).
 2. Click on the register button on [https://publish.dedi.global/](https://publish.dedi.global/).
-
-![image](../../.gitbook/assets/screenshot-register.png)
-
-3. Enter your name and email address to receive an authentication link.
+3. Enter your name, email address and password to receive an authentication link. DeDi follows MFA (multi factor authentication) Returning users will have to log in using their password + one time authentication link sent on email.&#x20;
 4. Create Namespace (Provide Name, Description)
-5. Namespace **should be linked to a domain** to give it a “verified” status and make its contents accessible by the public. The following steps should be followed to verify a namespace -
-   1. Enter domain name. If the domain name is part of DeDi Global’s “list of allowed domains”, a TXT record will be generated.
-   2. Copy the generated TXT record as it needs to be updated in the DNS configuration file of your domain.
-   3. Click “Verify” after you have successfully updated the domain’s DNS file.
+5. Namespace **should be linked to a domain** to give it a **“verified” status** and **make its contents accessible to the public.** The following steps should be followed to verify a namespace -
+   1. Request for whitelisting of a domain. This can be done [here](https://docs.google.com/forms/d/e/1FAIpQLScAwEZh94DCIw70zrxWUJ1cud_wYfo_WEjqDpEmbxaw5ZF9aw/viewform). The request will be processed within 5 minutes, provided no adverse signals are detected for the domain.
+   2. Enter the domain name. A TXT record will be generated (only for whitelisting domains).
+   3. Copy the generated TXT record as it needs to be updated in the DNS configuration file of your domain.
+   4. Click “Verify” after you have successfully updated the domain’s DNS file.
 
 A **directory** is a **list of records with a configurable schema**, essentially the structured container of public information (like a registry of network participants or sanctioned entities) that sits under a namespace. **The terms directory and registry are to be understood as equivalent and may be used interchangeably.**
 
