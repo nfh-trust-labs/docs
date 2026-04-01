@@ -1,16 +1,12 @@
 # Setup
 
-DeDi Global provides two environments:
+DeDi Global provides one environment:
 
-* **Testing Environment** → `publish-test.dedi.global`
 * **Production Environment** → `publish.dedi.global`
 
-If you're new to DeDi, start with the **test environment**. Once you're confident, move to production.
-
-#### Steps
+**Steps**
 
 1. Register on the platform.
 2. Generate an **API token**.
 3. Use the appropriate server:
-   * Test: `test.dedi.global`
    * Production: `api.dedi.global`
