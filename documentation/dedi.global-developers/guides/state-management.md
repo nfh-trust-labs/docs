@@ -6,7 +6,7 @@ This document describes the canonical states for registries and records, the all
 
 Below is a visual diagram that summarizes the allowed transitions for registries and records. If your renderer supports SVG, the image will appear inline; otherwise the file is available at&#x20;
 
-<figure><img src="../.gitbook/assets/Screenshot 2025-12-16 at 6.51.00 PM.png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../../.gitbook/assets/Screenshot 2025-12-16 at 6.51.00 PM.png" alt=""><figcaption></figcaption></figure>
 
 _Diagram: registry transitions (top) and record transitions (bottom)._
 

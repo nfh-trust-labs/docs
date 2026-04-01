@@ -16,7 +16,7 @@ This document explains the complete flow for creating registries and managing **
 1. **Create a Namespace**\
    Use the dashboard or API to create a new namespace.
 2. **Verify Your Namespace (Optional)**\
-   Follow the instructions in domain-verification.md to verify your namespace.
+   Follow the instructions in domain-verification to verify your namespace.
 
 ### 🗂️ Registry and Records
 

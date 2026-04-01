@@ -4,7 +4,7 @@ The **DeDi Protocol** defines a universal, open standard for discovering and ver
 
 **DeDi Global** is a SaaS implementation of the DeDi (Decentralized Directories) Protocol.
 
-Before proceeding, review the core protocol specifications available at [github.com/dedi-global](https://github.com/dedi-global) to gain a foundational understanding of the DeDi architecture and design principles.
+Before proceeding, review the core protocol specifications available [here](https://github.com/LF-Decentralized-Trust-labs/decentralized-directory-protocol) to gain a foundational understanding of the DeDi architecture and design principles.
 
 Anyone implementing the DeDi Protocol or integrating with DeDi Global must be familiar with its **three-tier architecture** and **API conventions**, which together enable secure and verifiable data discoverability.
 
