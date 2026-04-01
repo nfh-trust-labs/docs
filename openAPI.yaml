@@ -1276,6 +1276,86 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  /dedi/{namespace}/remove-namespace-verification:
+    post:
+      tags:
+        - Domain Verification
+      summary: Remove namespace domain verification
+      description: |
+        Removes domain verification from a namespace, reverting it to unverified status.
+        This operation removes the domain association and resets verification status.
+
+        **Authentication:** Required (Cookie or API Key)
+
+        **Prerequisites:**
+        - Namespace must exist and be currently verified
+        - Domain must be associated with the namespace
+
+        **Process:**
+        1. Validates namespace exists (by ID or domain)
+        2. Confirms namespace is currently verified  
+        3. Removes the domain verification record from database
+        4. Resets namespace verification status to false
+        5. Clears the domain association from namespace
+
+        **Important Notes:**
+        - This action is irreversible - verification must be performed again to re-verify
+        - Removing verification does not delete the namespace itself
+        - The namespace can be re-verified with the same or different domain after removal
+        - This reduces the trust level of the namespace
+      operationId: removeNamespaceVerification
+      parameters:
+        - name: namespace
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Namespace ID or verified domain name to remove verification from
+          example: "techcorp.com"
+      responses:
+        '200':
+          description: Namespace verification removed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Namespace verification removed successfully"
+        '400':
+          description: Bad request - namespace parameter required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Namespace not found, namespace not verified, or domain not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    examples:
+                      namespace_not_found:
+                        value: "Namespace not found"
+                      not_verified:
+                        value: "Namespace is not verified"
+                      domain_not_found:
+                        value: "Domain not found for this namespace"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Internal server error while removing namespace verification"
+
   /dedi/verify-namespace-lookup:
     post:
       tags:
