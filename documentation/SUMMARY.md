@@ -37,6 +37,12 @@
   * [State management](dedi.global-developers/guides/state-management.md)
   * [Watch Feature](dedi.global-developers/guides/watch-feature.md)
 
+## API Tools & Resources
+
+* [API Tools & Resources](dedi.global-developers/api-tools/README.md)
+  * [Postman Collection](dedi.global-developers/api-tools/postman-collection.md)
+  * [OpenAPI Specification](dedi.global-developers/api-tools/openapi-specification.md)
+
 ## Miscellaneous
 
 * [FAQs](miscellaneous/faqs.md)

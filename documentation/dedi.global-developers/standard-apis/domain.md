@@ -305,6 +305,73 @@ const data = await response.json();
 - Get verification string for manual DNS configuration
 - Troubleshoot verification issues
 
+### Remove Namespace Verification
+
+Remove domain verification from a namespace, reverting it to unverified status.
+
+**Endpoint:** `POST /dedi/{namespace}/remove-namespace-verification`
+
+**Parameters:**
+- `namespace` (path, required): Namespace ID or verified domain name to remove verification from
+
+**Prerequisites:**
+- Namespace must exist and be currently verified
+- Domain must be associated with the namespace
+
+**Process:**
+1. Validates namespace exists (by ID or domain)
+2. Confirms namespace is currently verified
+3. Removes the domain verification record from database
+4. Resets namespace verification status to false
+5. Clears the domain association from namespace
+
+**Example Request:**
+```typescript
+const response = await fetch('https://api.dedi.global/dedi/techcorp.com/remove-namespace-verification', {
+  method: 'POST',
+  headers: {
+    'Authorization': 'Bearer YOUR_API_KEY',
+    'Content-Type': 'application/json'
+  }
+});
+
+// Or using namespace ID
+const response = await fetch('https://api.dedi.global/dedi/did:web:did.cord.network:76E.../remove-namespace-verification', {
+  method: 'POST',
+  headers: {
+    'Authorization': 'Bearer YOUR_API_KEY',
+    'Content-Type': 'application/json'
+  }
+});
+
+const data = await response.json();
+```
+
+**Success Response (200):**
+```typescript
+{
+  "message": "Namespace verification removed successfully"
+}
+```
+
+**Error Responses:**
+- `400` - Namespace parameter required
+- `404` - Namespace not found, namespace is not verified, or domain not found for namespace
+- `500` - Internal server error while removing verification
+
+**Use Cases:**
+- Decommission domain verification when changing domain strategy
+- Reset namespace to unverified state for re-verification with different domain
+- Remove verification due to domain ownership changes
+- Clean up verification when domain is no longer controlled by namespace owner
+- Prepare namespace for transfer to different domain owner
+
+**Important Notes:**
+- This action is irreversible - verification must be performed again to re-verify
+- Removing verification does not delete the namespace itself, only the domain association
+- The namespace can be re-verified with the same or different domain after removal
+- Users should be cautious as this reduces the trust level of the namespace
+
 ## Best Practices
 
 ### DNS Configuration

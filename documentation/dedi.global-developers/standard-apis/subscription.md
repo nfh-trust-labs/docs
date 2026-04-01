@@ -320,15 +320,18 @@ When events occur, DeDi will send HTTP POST requests to your webhook URL with th
 ## Event Types
 
 ### Registry Events
+- `registry.created` - New registry created
 - `registry.updated` - Registry metadata or description changed
-- `registry.state_changed` - Registry suspended, reinstated, or revoked
-- `record.created` - New record added to the registry
-- `record.updated` - Existing record modified  
-- `record.state_changed` - Record suspended, reinstated, or revoked
+- `registry.suspended` - Registry suspended
+- `registry.reinstated` - Registry reinstated
+- `registry.revoked` - Registry revoked
 
 ### Record Events  
+- `record.created` - New record added to the registry
 - `record.updated` - Record content or metadata changed
-- `record.state_changed` - Record state changed (suspend/reinstate/revoke)
+- `record.suspended` - Record suspended
+- `record.reinstated` - Record reinstated
+- `record.revoked` - Record revoked
 
 ## Webhook Security
 
@@ -417,8 +420,29 @@ app.post('/webhook/dedi-updates', (req, res) => {
     case 'record.updated':
       handleEmployeeUpdate(req.body);
       break;
-    case 'registry.state_changed':
-      handleRegistryStateChange(req.body);
+    case 'record.suspended':
+      handleRecordSuspension(req.body);
+      break;
+    case 'record.reinstated':
+      handleRecordReinstatement(req.body);
+      break;
+    case 'record.revoked':
+      handleRecordRevocation(req.body);
+      break;
+    case 'registry.created':
+      handleRegistryCreation(req.body);
+      break;
+    case 'registry.updated':
+      handleRegistryUpdate(req.body);
+      break;
+    case 'registry.suspended':
+      handleRegistrySuspension(req.body);
+      break;
+    case 'registry.reinstated':
+      handleRegistryReinstatement(req.body);
+      break;
+    case 'registry.revoked':
+      handleRegistryRevocation(req.body);
       break;
   }
   
