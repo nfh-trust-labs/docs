@@ -9,8 +9,6 @@
 
 * [The vision for Decentralised Directory (DeDi)](resources/the-vision-for-decentralised-directory-dedi/README.md)
   * [Appendix: Three types of verification](resources/the-vision-for-decentralised-directory-dedi/appendix-three-types-of-verification.md)
-* [User-guides](resources/user-guides/README.md)
-  * [User Guide - DeDi.Global namespace & directory creation](resources/user-guides/namespace-and-registry-creation.md)
 * [How are DeDi.global entries cryptographically secured?](resources/how-are-dedi.global-entries-cryptographically-secured.md)
 * [DeDi in Verifiable Credential Workflows](resources/dedi-in-verifiable-credential-workflows.md)
 
@@ -19,9 +17,9 @@
 * [Developer documentation](dedi.global-developers/developer-documentation.md)
 * [DeDi 101](dedi.global-developers/dedi-101.md)
 * [Quickstart](dedi.global-developers/quickstart/README.md)
-  * [Setup](dedi.global-developers/quickstart/setup.md)
+  * [User Guide - DeDi.Global namespace & directory creation](dedi.global-developers/quickstart/namespace-and-registry-creation.md)
+  * [Setup for using DeDi APIs](dedi.global-developers/quickstart/setup.md)
   * [Domain Verification - The bedrock of trust in DeDi](dedi.global-developers/quickstart/domain-verification-the-bedrock-of-trust-in-dedi.md)
-  * [Registry Creation and Management Guide](dedi.global-developers/quickstart/registry-creation-and-management-guide.md)
 * [API Reference](dedi.global-developers/standard-apis/README.md)
   * [Publish APIs](dedi.global-developers/standard-apis/publish.md)
   * [Access APIs](dedi.global-developers/standard-apis/access.md)

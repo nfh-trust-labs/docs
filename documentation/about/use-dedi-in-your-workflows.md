@@ -10,21 +10,25 @@ Get started in 5 min with dedi.global
 
 {% stepper %}
 {% step %}
-#### Claim your namespace
+**Claim your namespace**
 
 Register your organization on [dedi.global](https://dedi.global).
 {% endstep %}
 
 {% step %}
-#### Publish your registries
+**Publish your registries**
 
 Publish your first directory!
 {% endstep %}
 
 {% step %}
-#### Look up and query info using DeDi
+**Look up and query info using DeDi**
 
 Adopt the DeDi Protocol to start looking up and querying public records in verification flows.
 {% endstep %}
 {% endstepper %}
+
+{% hint style="info" icon="globe-pointer" %}
+More detailed information on getting started can be found [here](../dedi.global-developers/quickstart/namespace-and-registry-creation.md).
+{% endhint %}
 
