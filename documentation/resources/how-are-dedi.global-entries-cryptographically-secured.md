@@ -2,8 +2,6 @@
 
 DeDi.global entries are cryptographically secured through proof anchoring on the CORD blockchain. Proofs are anchored at **every level** of the hierarchy—namespaces, registries, and records each have their own cryptographic proof.
 
-***
-
 ### How Proofs Work
 
 Every entry in DeDi is secured through a consistent process:
@@ -14,8 +12,6 @@ Every entry in DeDi is secured through a consistent process:
 4. Hashed using **BLAKE2 H256**
 
 The resulting digest, along with metadata about the creator and network, forms the proof that is anchored on-chain.
-
-***
 
 ### Proof Structures
 
@@ -64,8 +60,6 @@ The resulting digest, along with metadata about the creator and network, forms t
 
 **Fields used for digest calculation:** `namespace_id`, `registry_id`, `registry_name`, `record_name`, `description`, `details`, `version`, `version_count`, `state`, `genesis`, `created_by`, `meta`, `ttl`
 
-***
-
 ### How Verification Works
 
 To verify any DeDi entry (namespace, registry, or record):
@@ -88,8 +82,6 @@ For additional assurance, verify directly against the CORD blockchain:
 
 This confirms the proof was genuinely anchored on-chain and hasn't been tampered with.
 
-***
-
 ### DID Documents
 
 For every `profile_id`, a DID document is automatically generated:
@@ -99,8 +91,6 @@ did:web:did.cord.network:{id}
 ```
 
 Access any DID document at: `https://did.cord.network/{id}/did.json`
-
-***
 
 ### Summary
 

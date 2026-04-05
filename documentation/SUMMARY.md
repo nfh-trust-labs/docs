@@ -9,8 +9,17 @@
 
 * [The vision for Decentralised Directory (DeDi)](resources/the-vision-for-decentralised-directory-dedi/README.md)
   * [Appendix: Three types of verification](resources/the-vision-for-decentralised-directory-dedi/appendix-three-types-of-verification.md)
-* [How are DeDi.global entries cryptographically secured?](resources/how-are-dedi.global-entries-cryptographically-secured.md)
+  * [How to Use DeDi](resources/the-vision-for-decentralised-directory-dedi/how-to-use-dedi.md)
+* [DeDi.global](resources/dedi.global/README.md)
+  * [Features of DeDi.global](resources/dedi.global/features-of-dedi.global.md)
+* [Representative Use Cases](resources/representative-use-cases/README.md)
+  * [Public Key Registry on DeDi](resources/representative-use-cases/public-key-registry-on-dedi.md)
+  * [Authorized Entity Registry on DeDi](resources/representative-use-cases/authorized-entity-registry-on-dedi.md)
+  * [Revocation Registry on DeDi](resources/representative-use-cases/revocation-registry-on-dedi.md)
+  * [Schema Registry on DeDi](resources/representative-use-cases/schema-registry-on-dedi.md)
+  * [VC Signing Keys on DeDi](resources/representative-use-cases/vc-signing-keys-on-dedi.md)
 * [DeDi in Verifiable Credential Workflows](resources/dedi-in-verifiable-credential-workflows.md)
+* [How are DeDi.global entries cryptographically secured?](resources/how-are-dedi.global-entries-cryptographically-secured.md)
 
 ## DeDi.global - Developers
 
