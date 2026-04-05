@@ -53,10 +53,6 @@ DeDi doesn't necessitate changes to existing processes but implements characteri
 
 _To accelerate and simplify adoption,_ [_dedi.global_](http://dedi.global)_, is offered by the_ [_Network for Humanity Foundation_](https://networksforhumanity.org/) _as a ready to use, Universal Digital Infrastructure, in alignment with DPI (digital public infrastructure)_ [_principles_](https://docs.cdpi.dev/the-dpi-wiki/dpi-tech-architecture-principles) _. This philanthropic initiative allows registrars to effortlessly publish and manage their directories on a robust decentralized infrastructure, leveraging blockchain for automated governance, scalability, and enhanced trust—complementing and fully aligned with the open DeDi protocol._
 
-_By adopting the DeDi Protocol, relying parties can maintain a list of trusted domains and seamlessly query and look up public information, verifying digital assets and identities with unprecedented ease and confidence._
-
-_DeDi supports the co-existence of multiple data standards and schemas (e.g., VC JSON-LD, mDocs/mDL) and can output information in various formats, ensuring compatibility with existing systems and technologies. This makes it secure, trustworthy, and easy to use at scale, without disrupting your existing operations._
-
 <a href="../dedi.global/" class="button primary">Read more</a>
 
 </details>

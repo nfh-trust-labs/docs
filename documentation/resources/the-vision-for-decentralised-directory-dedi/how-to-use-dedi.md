@@ -6,6 +6,8 @@ description: Three ways to put your public data on tamper-proof, verifiable infr
 
 DeDi turns any public registry — entity lists, public keys, schemas, credential status — into machine-readable, cryptographically verifiable records accessible via a single API. All data on DeDi is public data. There is no vendor lock-in: the protocol is open, the data is portable, and you can leave at any time.
 
+> _To accelerate and simplify adoption,_ [_dedi.global_](http://dedi.global)_, is offered by the_ [_Network for Humanity Foundation_](https://networksforhumanity.org/) _as a ready to use, Universal Digital Infrastructure, in alignment with DPI (digital public infrastructure)_ [_principles_](https://docs.cdpi.dev/the-dpi-wiki/dpi-tech-architecture-principles) _. This philanthropic initiative allows registrars to effortlessly publish and manage their directories using an open, on chain infrastructure, —complementing and fully aligned with the open DeDi protocol._
+
 ## Choose Your Path
 
 <details>
