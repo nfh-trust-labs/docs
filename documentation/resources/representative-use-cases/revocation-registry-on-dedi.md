@@ -12,14 +12,12 @@ Offline-first credentials — QR codes, XML documents, Verifiable Credentials �
 
 DeDi provides a tamper-proof, publicly queryable revocation registry. When an issuer revokes a credential, they publish the hashed credential identifier to their revocation registry on DeDi. Any verifier, anywhere, can check revocation status with a single API call — without contacting the issuer.
 
-The Revocation Flow
+#### The Revocation Flow
 
 | 1. Issue  | Issuer creates a credential. The credential’s credentialStatus field points to the DeDi revocation registry (see VC integration below).                                                           |
 | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 2. Revoke | When a credential must be revoked, the issuer publishes the hashed credential UUID to the DeDi registry with status: revoked. The change is cryptographically anchored and timestamped on-chain.  |
 | 3. Verify | Verifier hashes the credential’s ID, calls the DeDi Lookup API. If the hash is present with revoked status, the credential is no longer valid. If not found, the credential has not been revoked. |
-
-<br>
 
 ## W3C Verifiable Credential Revocation
 
@@ -36,7 +34,7 @@ DeDi can support  with the W3C VC Data Model 2.0 via the credentialStatus field.
 ```
 {% endcode %}
 
-VC Verification Flow Using DeDi
+#### VC Verification Flow Using DeDi
 
 | Step 1: Receive VC         | Verifier receives a Verifiable Credential (JSON-LD, JWT, or SD-JWT format) from the holder.                                                                                                                        |
 | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -45,7 +43,7 @@ VC Verification Flow Using DeDi
 | Step 4: Evaluate response  | If the DeDi API returns a record with status: revoked, the credential is invalid. If the record is not found (404), the credential has not been revoked. The response includes an on-chain proof for auditability. |
 | Step 5: Trust decision     | Verifier now has: (a) signature validity, (b) revocation status, both independently verifiable without contacting the issuer.                                                                                      |
 
-Why DeDi for Revocation
+#### Why DeDi for Revocation
 
 The revocation registry is tamper-proof — even the issuer cannot silently un-revoke a credential. All revocation events are on-chain with timestamps. The registry is publicly queryable, so any verifier can check without credentials or API keys. And because it’s on DeDi, it works across credential systems: national IDs, professional licenses, academic certificates, organizational authorizations.
 

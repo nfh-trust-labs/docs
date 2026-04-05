@@ -2,7 +2,7 @@
 
 The **DeDi Protocol** defines a universal, open standard for discovering and verifying public information across the internet. It specifies a machine-readable, unified API that enables interoperability and trust in querying and verifying public directories.
 
-**DeDi Global** is a SaaS implementation of the DeDi (Decentralized Directories) Protocol.
+**DeDi Global** is a hosted implementation of the DeDi (Decentralized Directories) Protocol.
 
 Before proceeding, review the core protocol specifications available [here](https://github.com/LF-Decentralized-Trust-labs/decentralized-directory-protocol) to gain a foundational understanding of the DeDi architecture and design principles.
 

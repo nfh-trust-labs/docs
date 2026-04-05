@@ -12,7 +12,7 @@ When an organization issues Verifiable Credentials, verifiers need the issuer’
 
 Publish VC signing keys (Ed25519, BBS+, SD-JWT, ECDSA) as structured records on DeDi. Any verifier globally can resolve an issuer’s keys in one API call, regardless of the credential format or the issuer’s DID method.
 
-How It Works
+#### How It Works
 
 | Publish keys | Issuer publishes their VC signing public keys to a DeDi namespace. Each key record includes: algorithm (Ed25519, BBS+, etc.), public key material, purpose (assertionMethod, authentication), and validity period. |
 | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -20,22 +20,24 @@ How It Works
 | Rotate       | When keys are rotated, new versions are published. Old keys remain resolvable for historical credential verification.                                                                                              |
 | Multi-format | A single issuer can publish keys for multiple credential formats (JSON-LD with Data Integrity, JWT, SD-JWT) in the same namespace.                                                                                 |
 
-<br>
-
-## What This Enables
+#### What This Enables
 
 Any verifier, anywhere in the world, can validate a Verifiable Credential from any issuer that publishes on DeDi — without bilateral integration, without knowing the issuer’s DID method, and without relying on the issuer’s infrastructure being online at verification time.
 
 This is particularly critical for cross-border credential verification, where issuers and verifiers operate under different technical stacks and trust frameworks.
 
-Example
+#### Example
 
+{% code title="" overflow="wrap" %}
+```
 GET https://dedi.global/dedi/lookup/{issuer-namespace}/{signing-keys}/{key-id}
 
 Returns: JSON with public key material (JWK or PEM), algorithm identifier, purpose, validity dates, version history, on-chain proof.
+```
+{% endcode %}
 
-DeDi.global  |  Networks for Humanity Foundation  |  Linux Foundation Decentralized Trust
 
-[https://dedi.global](https://dedi.global)
+
+
 
 <br>

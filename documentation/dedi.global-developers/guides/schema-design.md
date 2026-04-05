@@ -2,17 +2,23 @@
 
 Each registry in DeDi defines a schema — the structure of the records it contains.
 
-When creating a registry you should provide a schema. There are two main options:
+When creating a registry, you provide a schema. There are two options:
 
-* Use a pre-defined schema tag. Each schema tag points to a JSON Schema stored in the system. To list available tags use the lookup API:
+#### **Option 1: Use a pre-defined schema tag.**&#x20;
 
-```http
+Each tag points to a JSON Schema stored in the system. To list available tags:
+
+```
 GET /dedi/lookup/dedi.global/Schemas
 ```
 
-* Provide a custom JSON Schema (JSON Schema Draft 7 is supported).
+Available templates include: Membership, Public Key, Revocation, Beckn.
 
-#### Example: minimal JSON Schema (Draft 7)
+#### **Option 2: Provide a custom JSON Schema.**&#x20;
+
+JSON Schema Draft 7 is supported.
+
+#### Example: Minimal Custom Schema
 
 ```json
 {
@@ -21,15 +27,36 @@ GET /dedi/lookup/dedi.global/Schemas
   "type": "object",
   "properties": {
     "id": { "type": "string" },
-    "name": { "type": "string" },
+    "name": { "type": "string" }
   },
   "required": ["id", "name"]
 }
 ```
 
-* If you are doing a bulk upload, the importer will use the first row of the CSV to map columns to schema properties — see `bulk-upload.md` in this folder for full details.
+#### Example: Public Key Registry Schema
 
-#### See also
+```json
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Public Key Record",
+  "type": "object",
+  "properties": {
+    "keyId": { "type": "string", "description": "Unique key identifier" },
+    "algorithm": { "type": "string", "enum": ["Ed25519", "ECDSA-P256", "RSA-2048"] },
+    "publicKeyPem": { "type": "string", "description": "PEM-encoded public key" },
+    "purpose": { "type": "string", "enum": ["signing", "encryption", "authentication"] },
+    "validFrom": { "type": "string", "format": "date-time" },
+    "validUntil": { "type": "string", "format": "date-time" }
+  },
+  "required": ["keyId", "algorithm", "publicKeyPem", "purpose", "validFrom"]
+}
+```
 
-* Lookup API: `../standard-apis/1. lookup.md`
-* Bulk upload guide: `3. bulk-upload.md`
+### Bulk Upload and Schemas
+
+If you are doing a bulk upload, the importer uses the first row of the CSV to map columns to schema properties. See the [Bulk Upload guide](bulk-upload.md) for details.
+
+### See Also
+
+* [Lookup API ](../standard-apis/access.md)— Query available schema tags
+* [Bulk Upload guide](bulk-upload.md) — CSV import with schema mapping

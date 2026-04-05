@@ -29,9 +29,8 @@ Query all active entities: GET /dedi/query/{namespace}/{registry}?status=active
 
 ## What Changes
 
-| Before DeDi                                           | After DeDi                                                 |
-| ----------------------------------------------------- | ---------------------------------------------------------- |
 | Periodic PDF lists, updated monthly or quarterly      | Real-time queryable registry, changes propagate in seconds |
+| ----------------------------------------------------- | ---------------------------------------------------------- |
 | Revoked entities invisible until next PDF release     | Revocations visible immediately via API                    |
 | Manual verification — search a PDF, hope it’s current | Programmatic verification — one API call, with proof       |
 | No audit trail for authorization changes              | Full version history, on-chain, independently verifiable   |

@@ -36,7 +36,7 @@ The verified domain makes the URL human-readable and helps establish clear prove
 #### Steps
 
 1. **Domain Whitelisting**
-   * Contact our support team to whitelist your domain
+   * Submit a request [here](https://docs.google.com/forms/d/e/1FAIpQLScAwEZh94DCIw70zrxWUJ1cud_wYfo_WEjqDpEmbxaw5ZF9aw/viewform?usp=dialog) to whitelist your domain
 2.  **Generate DNS Record**
 
     * Use our API/UI to generate a DNS TXT record
@@ -46,7 +46,7 @@ The verified domain makes the URL human-readable and helps establish clear prove
     ```
 3. **DNS Configuration**
    * Add the provided TXT record to your domain's DNS settings
-   * Wait for DNS propagation (typically 24-48 hours)
+   * Wait for DNS propagation (can take anywhere from 15 min to 48 hours)
 4.  **Verify Domain**
 
     * Use either the UI or API to complete verification

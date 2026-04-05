@@ -20,13 +20,11 @@ Publish public keys as structured, versioned records on DeDi. Each key record co
 | Discover | Any system calls the DeDi Lookup API with the key’s record ID. Response: JSON with the PEM key, metadata, version history, and on-chain proof. Sub-200ms.                                                               |
 | Verify   | The consumer verifies the cryptographic proof to confirm the key is authentic and unaltered. No need to contact the publisher.                                                                                          |
 
-<pre data-title="Example API Call" data-overflow="wrap"><code><strong>
-</strong></code></pre>
-
 ### What Changes
 
-| Static .cer/.pem files on a website                            | Structured, versioned records with actual key material  |
+| Before DeDi                                                    | After DeDi                                              |
 | -------------------------------------------------------------- | ------------------------------------------------------- |
+| Static .cer/.pem files on a website                            | Structured, versioned records with actual key material  |
 | Manual download, no change notification                        | Key rotation propagates instantly via API               |
 | Stale keys cached indefinitely                                 | Version history on-chain; current key always resolvable |
 | No way to verify key authenticity without contacting publisher | Cryptographic proof verifiable by anyone, independently |

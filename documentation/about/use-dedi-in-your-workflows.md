@@ -6,11 +6,11 @@ DeDi’s information architecture is organized around three key constructs:
 * **Directory:** Refers to a list of records with configurable schemas.
 * **Records:** The actual values or pointers to information.
 
-Get started in 5 min with dedi.global:
+**Get started in 5 min with dedi.global:**
 
 {% stepper %}
 {% step %}
-<mark style="color:$primary;">**Create your account with**</mark>
+<mark style="color:$primary;">**Create your account**</mark>&#x20;
 
 Register yourself on [dedi.global](https://dedi.global) using relevant email
 {% endstep %}

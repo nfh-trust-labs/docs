@@ -12,7 +12,7 @@ APIs and data formats evolve. Schemas are documented in PDFs, wikis, or version-
 
 Publish API and data schemas as versioned, resolvable records on DeDi. Each schema record contains: the schema definition (JSON Schema, XML Schema, or any structured format), a namespace URI, version identifiers, deprecation status, and links to successor schemas. Consumers discover schemas via the same API they use for every other DeDi registry.
 
-How It Works
+#### How It Works
 
 | Publish  | Organization publishes schemas to a DeDi namespace. Each schema is a record with the schema body, version, status (active/deprecated/superseded), and a namespace URI. |
 | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -22,12 +22,12 @@ How It Works
 
 ## What Changes
 
-| Before DeDi                                 | After DeDi                                                         |
-| ------------------------------------------- | ------------------------------------------------------------------ |
-| Schemas in PDFs, wikis, scattered repos     | Single registry with all schemas, versions, and deprecation status |
-| No machine-readable discovery               | Query API to find active schemas, resolve by namespace URI         |
-| Breaking changes discovered in production   | Deprecation status and successor links enable graceful migration   |
-| No provenance — who published this version? | Every schema version is signed, timestamped, and anchored on-chain |
+| Before DeDi                                               | After DeDi                                                         |
+| --------------------------------------------------------- | ------------------------------------------------------------------ |
+| Schemas in PDFs, wikis, scattered repos                   | Single registry with all schemas, versions, and deprecation status |
+| No machine-readable discovery                             | Query API to find active schemas, resolve by namespace URI         |
+| Breaking changes discovered in production                 | Deprecation status and successor links enable graceful migration   |
+| No cryptographic provenance — who published this version? | Every schema version is signed, timestamped, and anchored on-chain |
 
 
 

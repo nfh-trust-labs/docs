@@ -2,11 +2,15 @@
 
 DeDi.global is a ready-to-use SaaS implementing the open DeDi protocol, offered by the Networks for Humanity Foundation. It allows registrars to publish and manage public registries on a decentralized infrastructure.
 
-### RECAP - Core Concepts
+<details>
+
+<summary>RECAP - Core Concepts</summary>
 
 * **Namespace** — corresponds to a domain (and its organisation). Think of it as the digital "root" under which all directories and records live. Users can own multiple namespaces, similar to owning multiple domains.
 * **Directory (Registry)** — a list of records with a configurable schema, sitting under a namespace. The terms _directory_ and _registry_ are interchangeable.
 * **Record** — an individual entry within a directory, structured according to the directory's schema.
+
+</details>
 
 ### <mark style="color:$tint;">1. Account Setup</mark>
 
@@ -32,8 +36,8 @@ DeDi.global is a ready-to-use SaaS implementing the open DeDi protocol, offered 
 ### <mark style="color:$tint;">3. Registry & Records</mark>
 
 1. **Create a Registry** — provide a name, description, and select a schema template.
-   * Available templates: **Membership**, **Public Key**, **Revocation**, **Beckn One**.
-   * Custom schemas will be supported in the future (ideally published on a standard like schema.org).
+   * Available templates: **Membership**, **Public Key**, **Revocation**, **Beckn schemas**.
+   * Custom schemas can be provided via JSON Schema Draft 7 (ideally published on a standard like schema.org).
 2. **Add Delegates** _(optional)_ — assign delegates to help manage the registry.
 3. **Add Records** — create entries in the registry per the selected schema.
 
