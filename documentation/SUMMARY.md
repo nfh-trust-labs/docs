@@ -30,6 +30,7 @@
   * [Setup for using DeDi APIs](dedi.global-developers/quickstart/setup.md)
   * [Domain Verification - The bedrock of trust in DeDi](dedi.global-developers/quickstart/domain-verification-the-bedrock-of-trust-in-dedi.md)
 * [API Reference](dedi.global-developers/standard-apis/README.md)
+  * [Authentication APIs](dedi.global-developers/standard-apis/authentication.md)
   * [Publish APIs](dedi.global-developers/standard-apis/publish.md)
   * [Access APIs](dedi.global-developers/standard-apis/access.md)
   * [Domain Verification](dedi.global-developers/standard-apis/domain.md)

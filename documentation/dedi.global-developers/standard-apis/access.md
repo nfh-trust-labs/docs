@@ -1,786 +1,267 @@
 # Access APIs
 
-The Access APIs provide comprehensive data retrieval capabilities for the DeDi.global platform. These read-only endpoints allow you to lookup, query, and explore namespaces, registries, and records with powerful filtering and version management features.
+Access APIs provide lookup, query, version-history, and export endpoints for namespaces, registries, and records.
 
-🔒 **Authentication Required**: All Access APIs require authentication using your API key in the Authorization header as a Bearer token.
+## Authentication
 
-## Overview
+The current Postman collection marks most Access APIs as public.
 
-Access APIs are organized into three main categories:
-
-- **Lookup APIs** - Retrieve detailed information about specific resources
-- **Query APIs** - Search and filter collections of resources with pagination
-- **Version APIs** - Manage and retrieve historical versions of resources
-
-All access APIs require authentication and support both current and historical data queries.
+- No authentication required:
+  - Lookup endpoints
+  - Query endpoints
+  - Version list endpoints
+  - Registry-by-tag lookup
+- Authentication required:
+  - CSV export endpoint
 
 ## Lookup APIs
 
-Lookup APIs provide detailed information about specific resources using their identifiers.
+## Namespace Lookup
 
-### Namespace Lookup
-
-Retrieve detailed information about a specific namespace.
+Public namespace lookup by namespace ID or domain.
 
 **Endpoint:** `GET /dedi/lookup/{namespace}`
 
-**Parameters:**
-- `namespace` (path, required): Namespace ID or verified domain
-- `version_id` (query, optional): Specific version to retrieve
-- `as_on` (query, optional): Historical lookup date (YYYY-MM-DD format)
+**Path Parameters:**
+- `namespace` (required): Namespace ID or verified domain
 
-**Example Request:**
-```typescript
-const response = await fetch('https://api.dedi.global/dedi/lookup/my-namespace', {
-  method: 'GET',
-  headers: {
-    'Authorization': 'Bearer YOUR_API_KEY',
-    'Content-Type': 'application/json'
-  }
-});
-
-const data = await response.json();
-```
-
-**Success Response (200):**
-```typescript
-{
-  "message": "Namespace details retrieved successfully",
-  "data": {
-    "domain": "example.com",
-    "name": "my-namespace",
-    "namespace_id": "did:cord:3yVazTQMc...",
-    "digest": "0x123abc...",
-    "description": "Production namespace for example.com services",
-    "created_by": "did:cord:3xMxFkzY...",
-    "genesis": "0x456def...",
-    "created_at": "2024-01-01T00:00:00Z",
-    "updated_at": "2024-01-01T00:00:00Z",
-    "version": "0x789ghi...",
-    "version_count": 3,
-    "is_verified": true,
-    "meta": {
-      "category": "production",
-      "region": "global"
-    },
-    "registry_count": 15,
-    "ttl": 86400,
-    "proof": {
-      "type": "DediNamespaceProof2026",
-      "namespace_did": "did:cord:3yVazTQMc...",
-      "creator_did": "did:cord:3xMxFkzY...",
-      "digest": "0x123abc...",
-      "network_genesis": "0x101112..."
-    }
-  }
-}
-```
-
-**Error Responses:**
-- `400` - Invalid namespace parameter or date format
-- `404` - Namespace not found or version not found
-- `500` - Internal server error
-
-### Registry Lookup
-
-Retrieve detailed information about a specific registry.
-
-**Endpoint:** `GET /dedi/lookup/{namespace}/{registry_name}`
-
-**Parameters:**
-- `namespace` (path, required): Namespace ID or domain
-- `registry_name` (path, required): Registry name
-- `version_id` (query, optional): Specific version to retrieve
-- `as_on` (query, optional): Historical lookup date (YYYY-MM-DD format)
-
-**Example Request:**
-```typescript
-const response = await fetch('https://api.dedi.global/dedi/lookup/my-namespace/user-registry', {
-  method: 'GET',
-  headers: {
-    'Authorization': 'Bearer YOUR_API_KEY',
-    'Content-Type': 'application/json'
-  }
-});
-
-const data = await response.json();
-```
-
-**Success Response (200):**
-```typescript
-{
-  "message": "Resource retrieved successfully",
-  "data": {
-    "namespace": "my-namespace",
-    "namespace_id": "did:cord:3yVazTQMc...",
-    "registry_id": "did:cord:3zAbcDef...",
-    "registry_name": "user-registry",
-    "digest": "0x456abc...",
-    "description": "User management registry for authentication",
-    "created_by": "did:cord:3xMxFkzY...",
-    "tag": "membership",
-    "schema": {
-      "type": "object",
-      "properties": {
-        "email": { "type": "string", "format": "email" },
-        "role": { "type": "string", "enum": ["admin", "user"] },
-        "active": { "type": "boolean" }
-      },
-      "required": ["email", "role"]
-    },
-    "genesis": "0x789def...",
-    "created_at": "2024-01-01T00:00:00Z",
-    "updated_at": "2024-01-01T00:00:00Z",
-    "state": "live",
-    "meta": {
-      "department": "engineering",
-      "priority": "high"
-    },
-    "record_count": 150,
-    "version_count": 2,
-    "version": "0x012ghi...",
-    "query_allowed": true,
-    "ttl": 3600,
-    "proof": {
-      "type": "DediRegistryProof2026",
-      "namespace_did": "did:cord:3yVazTQMc...",
-      "registry_identifier": "did:cord:3zAbcDef...",
-      "creator_did": "did:cord:3xMxFkzY...",
-      "digest": "0x456abc...",
-      "network_genesis": "0x101112..."
-    }
-  }
-}
-```
-
-> **Important**: A `200` response indicates successful data retrieval, not that the registry is active. Always check the `state` field to verify the registry's current status before using it.
-
-**Error Responses:**
-- `400` - Missing namespace or registry name
-- `404` - Namespace or registry not found
-- `500` - Internal server error
-
-### Record Lookup
-
-Retrieve detailed information about a specific record.
-
-**Endpoint:** `GET /dedi/lookup/{namespace}/{registry_name}/{record_name}`
-
-**Parameters:**
-- `namespace` (path, required): Namespace ID or domain
-- `registry_name` (path, required): Registry name
-- `record_name` (path, required): Record name
-- `version_id` (query, optional): Specific version to retrieve
-- `as_on` (query, optional): Historical lookup date (YYYY-MM-DD format)
-
-**Example Request:**
-```typescript
-const response = await fetch('https://api.dedi.global/dedi/lookup/my-namespace/user-registry/john-doe', {
-  method: 'GET',
-  headers: {
-    'Authorization': 'Bearer YOUR_API_KEY',
-    'Content-Type': 'application/json'
-  }
-});
-
-const data = await response.json();
-```
-
-**Success Response (200):**
-```typescript
-{
-  "message": "Resource retrieved successfully",
-  "data": {
-    "namespace": "my-namespace",
-    "namespace_id": "did:cord:3yVazTQMc...",
-    "registry_id": "did:cord:3zAbcDef...",
-    "registry_name": "user-registry",
-    "registry_state": "live",
-    "record_id": "did:cord:3aRecDef...",
-    "record_name": "john-doe",
-    "description": "User record for John Doe",
-    "digest": "0x789abc...",
-    "schema": {
-      "type": "object",
-      "properties": {
-        "email": { "type": "string", "format": "email" },
-        "role": { "type": "string", "enum": ["admin", "user"] }
-      }
-    },
-    "version_count": 3,
-    "version": "0x345ghi...",
-    "details": {
-      "email": "john.doe@example.com",
-      "role": "admin",
-      "active": true,
-      "last_login": "2024-01-01T10:30:00Z"
-    },
-    "meta": {
-      "department": "engineering",
-      "access_level": "high"
-    },
-    "genesis": "2024-01-01T00:00:00.000Z",
-    "created_at": "2024-01-01T00:00:00Z",
-    "updated_at": "2024-01-01T00:00:00Z",
-    "created_by": "did:cord:3xMxFkzY...",
-    "state": "live",
-    "ttl": 86400,
-    "proof": {
-      "type": "DediRecordProof2026",
-      "namespace_did": "did:cord:3yVazTQMc...",
-      "registry_identifier": "did:cord:3zAbcDef...",
-      "record_identifier": "did:cord:3aRecDef...",
-      "creator_did": "did:cord:3xMxFkzY...",
-      "digest": "0x789abc...",
-      "network_genesis": "0x101112..."
-    }
-  }
-}
-```
-
-**Expired Record Response (200):**
-```typescript
-{
-  "message": "Record has been expired",
-  "data": {
-    // Same structure as above but with state: "expired"
-  }
-}
-```
-
-> **Important**: A `200` response indicates successful data retrieval, not that the record is active. Always check the `state` field to verify the record's current status before using it.
-
-**Error Responses:**
-- `400` - Missing required parameters
-- `404` - Namespace, registry, or record not found
-- `500` - Internal server error
-
-## Query APIs
-
-Query APIs enable searching and filtering collections with pagination support.
-
-### Query Registries by Namespace
-
-List all registries within a namespace with filtering options.
-
-**Endpoint:** `GET /dedi/query/{namespace}`
-
-**Parameters:**
-- `namespace` (path, required): Namespace ID or domain
-- `from` (query, optional): Filter from date (YYYY-MM-DD)
-- `to` (query, optional): Filter to date (YYYY-MM-DD)
-- `status` (query, optional): Filter by status (`revoked`, `suspended`)
-- `name` (query, optional): Search by registry name (minimum 3 characters)
-- `sort` (query, optional): Sort by `date`, `status`, `name`
-- `page` (query, optional): Page number for pagination
-- `page_size` (query, optional): Items per page
-- `as_on` (query, optional): Historical query date (YYYY-MM-DD)
-
-**Example Request:**
-```typescript
-const response = await fetch('https://api.dedi.global/dedi/query/my-namespace?sort=date&page=1&page_size=10', {
-  method: 'GET',
-  headers: {
-    'Authorization': 'Bearer YOUR_API_KEY',
-    'Content-Type': 'application/json'
-  }
-});
-
-const data = await response.json();
-```
-
-**Success Response (200):**
-```typescript
-{
-  "message": "Resource retrieved successfully",
-  "data": {
-    "namespace_id": "did:cord:3yVazTQMc...",
-    "namespace_name": "my-namespace",
-    "domain": "my-namespace.dedi.global",
-    "created_by": "did:cord:3xMxFkzY...",
-    "created_at": "2024-01-01T00:00:00Z",
-    "updated_at": "2024-01-01T00:00:00Z",
-    "total_registries": 25,
-    "page_number": 1,
-    "page_size": 10,
-    "registries": [
-      {
-        "registry_id": "did:cord:3zAbcDef...",
-        "registry_name": "user-registry",
-        "description": "Registry for user profiles",
-        "digest": "0x456def...",
-        "tag": "users",
-        "schema": {
-          "type": "object",
-          "properties": {
-            "email": { "type": "string", "format": "email" }
-          }
-        },
-        "genesis": "2024-01-01T00:00:00.000Z",
-        "created_at": "2024-01-01T00:00:00Z",
-        "updated_at": "2024-01-01T00:00:00Z",
-        "created_by": "did:cord:3xMxFkzY...",
-        "state": "live",
-        "meta": {
-          "category": "identity",
-          "version": "v1.0"
-        },
-        "record_count": 150,
-        "version_count": 3,
-        "version": "0x789abc...",
-        "query_allowed": true,
-        "ttl": 86400
-      }
-    ]
-  }
-}
-```
-
-**Error Responses:**
+**Allowed Status Codes:**
+- `200` - Namespace returned
+- `400` - Invalid lookup input
 - `404` - Namespace not found
 - `500` - Internal server error
 
-### Query Records by Registry
+**Success Response Requirements in Collection:**
+- `message`
+- `data.namespace_id`
+- `data.proof.digest`
 
-List all records within a registry with filtering options.
+## Registry Lookup
+
+Public registry lookup.
+
+**Endpoint:** `GET /dedi/lookup/{namespace}/{registry_name}`
+
+**Path Parameters:**
+- `namespace` (required): Namespace ID or verified domain
+- `registry_name` (required): Registry name
+
+**Allowed Status Codes:**
+- `200` - Registry returned
+- `400` - Invalid lookup input
+- `404` - Namespace or registry not found
+- `500` - Internal server error
+
+**Success Response Requirements in Collection:**
+- `message`
+- `data.registry_id`
+- `data.proof.digest`
+
+## Record Lookup
+
+Public record lookup with optional historical query parameters.
+
+**Endpoint:** `GET /dedi/lookup/{namespace}/{registry_name}/{record_name}`
+
+**Path Parameters:**
+- `namespace` (required): Namespace ID or verified domain
+- `registry_name` (required): Registry name
+- `record_name` (required): Record name
+
+**Query Parameters:**
+- `version_id` (optional): Specific record version to return
+- `as_on` (optional): Historical lookup timestamp/filter value
+
+**Example Request:**
+```http
+GET /dedi/lookup/acme/products/item-001?version_id=v1&as_on=2026-01-01T00:00:00Z
+```
+
+**Allowed Status Codes:**
+- `200` - Record returned
+- `400` - Invalid lookup input
+- `404` - Namespace, registry, or record not found
+- `500` - Internal server error
+
+**Success Response Requirements in Collection:**
+- `message`
+- `data.record_id`
+- `data.proof.digest`
+
+## Query APIs
+
+## Namespace Query (Registries)
+
+Public registry query within a namespace.
+
+**Endpoint:** `GET /dedi/query/{namespace}`
+
+**Path Parameters:**
+- `namespace` (required): Namespace ID or verified domain
+
+**Query Parameters:**
+- `from` (optional)
+- `to` (optional)
+- `status` (optional): Collection default is `active`
+- `name` (optional): Search string
+- `sort` (optional): Collection default is `date`
+- `page` (optional)
+- `page_size` (optional)
+- `as_on` (optional)
+
+**Allowed Status Codes:**
+- `200` - Registries returned
+- `400` - Invalid query input
+- `404` - Namespace not found
+- `500` - Internal server error
+
+**Success Response Requirements in Collection:**
+- `message`
+- `data.registries`
+
+## Registry Query (Records)
+
+Public record query within a registry.
 
 **Endpoint:** `GET /dedi/query/{namespace}/{registry_name}`
 
-**Parameters:**
-- `namespace` (path, required): Namespace ID or domain
-- `registry_name` (path, required): Registry name
-- `from` (query, optional): Filter from date (YYYY-MM-DD)
-- `to` (query, optional): Filter to date (YYYY-MM-DD)
-- `state` (query, optional): Filter by state (`revoked`, `suspended`, `expired`)
-- `name` (query, optional): Search by record name (minimum 3 characters)
-- `sort` (query, optional): Sort by `date`, `state`, `name`
-- `page` (query, optional): Page number for pagination
-- `page_size` (query, optional): Items per page
-- `as_on` (query, optional): Historical query date (YYYY-MM-DD)
+**Path Parameters:**
+- `namespace` (required): Namespace ID or verified domain
+- `registry_name` (required): Registry name
 
-**Example Request:**
-```typescript
-const response = await fetch('https://api.dedi.global/dedi/query/my-namespace/user-registry?state=live&sort=name', {
-  method: 'GET',
-  headers: {
-    'Authorization': 'Bearer YOUR_API_KEY',
-    'Content-Type': 'application/json'
-  }
-});
+**Query Parameters:**
+- `from` (optional)
+- `to` (optional)
+- `state` (optional): Collection default is `live`
+- `name` (optional): Search string
+- `sort` (optional): Collection default is `name`
+- `page` (optional)
+- `page_size` (optional)
+- `as_on` (optional)
 
-const data = await response.json();
-```
-
-**Success Response (200):**
-```typescript
-{
-  "message": "Resource retrieved successfully",
-  "data": {
-    "namespace_id": "did:cord:3yVazTQMc...",
-    "namespace_name": "my-namespace",
-    "registry_name": "user-registry",
-    "registry_id": "did:cord:3zAbcDef...",
-    "schema": {
-      "type": "object",
-      "properties": {
-        "email": { "type": "string", "format": "email" },
-        "role": { "type": "string", "enum": ["admin", "user"] }
-      }
-    },
-    "meta": {
-      "category": "identity",
-      "access_level": "public"
-    },
-    "created_by": "did:cord:3xMxFkzY...",
-    "created_at": "2024-01-01T00:00:00Z",
-    "updated_at": "2024-01-01T00:00:00Z",
-    "total_records": 150,
-    "total_pages": 15,
-    "page_number": 1,
-    "page_size": 10,
-    "records": [
-      {
-        "record_id": "did:cord:3aRecDef...",
-        "record_name": "john-doe",
-        "description": "User record for John Doe",
-        "digest": "0x789abc...",
-        "details": {
-          "email": "john.doe@example.com",
-          "role": "admin",
-          "active": true
-        },
-        "genesis": "2024-01-01T00:00:00.000Z",
-        "created_at": "2024-01-01T00:00:00Z",
-        "updated_at": "2024-01-01T00:00:00Z",
-        "created_by": "did:cord:3xMxFkzY...",
-        "state": "live",
-        "version_count": 2,
-        "version": "0x345ghi...",
-        "ttl": 86400,
-        "meta": {
-          "department": "engineering",
-          "access_level": "high"
-        }
-      }
-    ]
-  }
-}
-```
-
-**Error Responses:**
-- `404` - Registry or namespace not found
+**Allowed Status Codes:**
+- `200` - Records returned
+- `400` - Invalid query input
+- `404` - Namespace or registry not found
 - `500` - Internal server error
 
-### Query Registries by Schema Tag
+**Success Response Requirements in Collection:**
+- `message`
+- `data.records`
 
-Find registries by their schema tag across the platform.
+## Query Registries by Tag
 
-**Endpoint:** `GET /dedi/{tag}/get-registry-by-tag`
+Lists verified registries associated with a schema tag.
 
-**Parameters:**
-- `tag` (path, required): Schema tag to filter by (e.g., `membership`, `public_key`, `revoke`)
+**Endpoint:** `GET /dedi/{registry_tag}/get-registry-by-tag`
 
-> **Note:** The tag cannot be `custom` as this endpoint is specifically for standardized schemas.
+**Path Parameters:**
+- `registry_tag` (required): Schema tag to query
 
-**Example Request:**
-```typescript
-const response = await fetch('https://api.dedi.global/dedi/membership/get-registry-by-tag', {
-  method: 'GET',
-  headers: {
-    'Authorization': 'Bearer YOUR_API_KEY',
-    'Content-Type': 'application/json'
-  }
-});
-
-const data = await response.json();
-```
-
-**Success Response (200):**
-```typescript
-{
-  "message": "Resource retrieved successfully",
-  "data": [
-    {
-      "registry_id": "did:cord:3zAbcDef...",
-      "registry_name": "employee-registry",
-      "namespace_id": "did:cord:3yVazTQMc...",
-      "description": "Employee membership registry",
-      "digest": "0x456def...",
-      "tag": "membership",
-      "schema": {
-        "type": "object",
-        "properties": {
-          "email": { "type": "string", "format": "email" },
-          "role": { "type": "string" },
-          "department": { "type": "string" }
-        }
-      },
-      "genesis": "2024-01-01T00:00:00.000Z",
-      "created_at": "2024-01-01T00:00:00Z",
-      "updated_at": "2024-01-01T00:00:00Z",
-      "created_by": "did:cord:3xMxFkzY...",
-      "state": "live",
-      "meta": {
-        "category": "membership",
-        "version": "v2.0"
-      },
-      "record_count": 50,
-      "version_count": 3,
-      "version": "0x789abc...",
-      "query_allowed": true,
-      "ttl": 86400
-    }
-  ]
-}
-```
-
-**Error Responses:**
-- `400` - Invalid tag (cannot be 'custom' or missing)
+**Allowed Status Codes:**
+- `200` - Registries returned
+- `400` - Invalid tag input
 - `500` - Internal server error
+
+**Success Response Requirements in Collection:**
+- `message`
+- `data.registries`
 
 ## Version APIs
 
-Version APIs provide access to historical versions and evolution tracking for all resources.
+## Namespace Version List
 
-### Namespace Versions
-
-Retrieve all available versions for a namespace.
+Public namespace version list.
 
 **Endpoint:** `GET /dedi/versions/{namespace}`
 
-**Parameters:**
-- `namespace` (path, required): Namespace ID or domain
+**Path Parameters:**
+- `namespace` (required): Namespace ID or verified domain
 
-**Example Request:**
-```typescript
-const response = await fetch('https://api.dedi.global/dedi/versions/my-namespace', {
-  method: 'GET',
-  headers: {
-    'Authorization': 'Bearer YOUR_API_KEY',
-    'Content-Type': 'application/json'
-  }
-});
+**Allowed Status Codes:**
+- `200` - Versions returned
+- `400` - Invalid input
+- `404` - Namespace not found
+- `500` - Internal server error
 
-const data = await response.json();
-```
+**Success Response Requirements in Collection:**
+- `message`
+- `data.versions`
 
-**Success Response (200):**
-```typescript
-{
-  "message": "Resource retrieved successfully",
-  "data": {
-    "created_by": "did:cord:3xMxFkzY...",
-    "created_at": "2024-01-01T00:00:00Z",
-    "updated_at": "2024-01-01T00:00:00Z",
-    "total_versions": 5,
-    "versions": [
-      "0x789ghi...", // Latest
-      "0x456def...",
-      "0x123abc...", // Oldest
-    ],
-    "ttl": 86400
-  }
-}
-```
+## Registry Version List
 
-### Registry Versions
-
-Retrieve all available versions for a registry.
+Public registry version list.
 
 **Endpoint:** `GET /dedi/versions/{namespace}/{registry_name}`
 
-**Parameters:**
-- `namespace` (path, required): Namespace ID or domain
-- `registry_name` (path, required): Registry name
+**Path Parameters:**
+- `namespace` (required): Namespace ID or verified domain
+- `registry_name` (required): Registry name
 
-**Example Request:**
-```typescript
-const response = await fetch('https://api.dedi.global/dedi/versions/my-namespace/user-registry', {
-  method: 'GET',
-  headers: {
-    'Authorization': 'Bearer YOUR_API_KEY',
-    'Content-Type': 'application/json'
-  }
-});
+**Allowed Status Codes:**
+- `200` - Versions returned
+- `400` - Invalid input
+- `404` - Namespace or registry not found
+- `500` - Internal server error
 
-const data = await response.json();
-```
+**Success Response Requirements in Collection:**
+- `message`
+- `data.versions`
 
-**Success Response (200):**
-```typescript
-{
-  "message": "Resource retrieved successfully",
-  "data": {
-    "registry_name": "user-registry",
-    "created_by": "did:cord:3xMxFkzY...",
-    "schema": {
-      "type": "object",
-      "properties": {
-        "email": { "type": "string", "format": "email" },
-        "role": { "type": "string" }
-      }
-    },
-    "created_at": "2024-01-01T00:00:00Z",
-    "updated_at": "2024-01-01T00:00:00Z",
-    "total_versions": 3,
-    "versions": [
-      "0x345ghi...", // Latest
-      "0x012def...",
-      "0x789abc..."  // Oldest
-    ],
-    "ttl": 3600
-  }
-}
-```
+## Record Version List
 
-### Record Versions
-
-Retrieve all available versions for a record.
+Public record version list.
 
 **Endpoint:** `GET /dedi/versions/{namespace}/{registry_name}/{record_name}`
 
-**Parameters:**
-- `namespace` (path, required): Namespace ID or domain
-- `registry_name` (path, required): Registry name
-- `record_name` (path, required): Record name
+**Path Parameters:**
+- `namespace` (required): Namespace ID or verified domain
+- `registry_name` (required): Registry name
+- `record_name` (required): Record name
 
-**Example Request:**
-```typescript
-const response = await fetch('https://api.dedi.global/dedi/versions/my-namespace/user-registry/john-doe', {
-  method: 'GET',
-  headers: {
-    'Authorization': 'Bearer YOUR_API_KEY',
-    'Content-Type': 'application/json'
-  }
-});
+**Allowed Status Codes:**
+- `200` - Versions returned
+- `400` - Invalid input
+- `404` - Namespace, registry, or record not found
+- `500` - Internal server error
 
-const data = await response.json();
-```
+**Success Response Requirements in Collection:**
+- `message`
+- `data.versions`
 
-**Success Response (200):**
-```typescript
-{
-  "message": "Resource retrieved successfully",
-  "data": {
-    "created_by": "did:cord:3xMxFkzY...",
-    "schema": {
-      "type": "object",
-      "properties": {
-        "email": { "type": "string", "format": "email" },
-        "role": { "type": "string" }
-      }
-    },
-    "created_at": "2024-01-01T00:00:00Z",
-    "updated_at": "2024-01-01T00:00:00Z",
-    "total_versions": 4,
-    "versions": [
-      "0x567jkl...", // Latest
-      "0x345ghi...",
-      "0x123def...",
-      "0x901abc..."  // Oldest
-    ],
-    "ttl": 86400
-  }
-}
-```
+## Export APIs
 
-## Error Handling
+## Export Records as CSV
 
-All Access APIs follow consistent error response patterns:
+Exports registry records as CSV. The collection explicitly requires authentication for this endpoint.
 
-### Common Error Responses
+**Endpoint:** `GET /dedi/{namespace}/{registry_name}/export-as-csv`
 
-**400 Bad Request:**
-```typescript
-{
-  "message": "Invalid input: namespace is missing or empty"
-}
-```
+**Authentication:** Required
 
-**401 Unauthorized:**
-```typescript
-{
-  "message": "Unauthorized: Invalid or missing authentication token"
-}
-```
+**Path Parameters:**
+- `namespace` (required): Namespace ID or verified domain
+- `registry_name` (required): Registry name
 
-**404 Not Found:**
-```typescript
-{
-  "message": "Namespace not found"
-}
-```
+**Query Parameters:**
+- `from` (optional)
+- `to` (optional)
+- `state` (optional): Collection default is `live`
+- `name` (optional): Search string
+- `as_on` (optional)
 
-**500 Internal Server Error:**
-```typescript
-{
-  "message": "An unexpected error occurred"
-}
-```
+**Headers:**
+- `Accept: text/csv`
 
-<!-- ## Rate Limiting
+**Allowed Status Codes:**
+- `200` - CSV returned
+- `400` - Invalid export input
+- `401` - Authentication failed
+- `404` - Namespace or registry not found
+- `500` - Internal server error
 
-Access APIs are subject to rate limiting to ensure fair usage:
+## Notes
 
-- **Default limit:** 1000 requests per hour per API key
-- **Burst limit:** 100 requests per minute
-- **Historical queries:** Limited to 100 requests per hour per API key
-
-Rate limit headers are included in all responses:
-- `X-RateLimit-Limit`: Total requests allowed
-- `X-RateLimit-Remaining`: Requests remaining in current window
-- `X-RateLimit-Reset`: Unix timestamp when limit resets -->
-
-## Best Practices
-
-### Performance Optimization
-
-1. **Use specific lookups** when you know exact resource identifiers
-2. **Implement pagination** for large result sets
-3. **Cache frequently accessed** namespace and registry data
-4. **Use historical queries sparingly** as they are more resource-intensive
-
-### Query Efficiency
-
-1. **Apply filters** to reduce result set size
-2. **Use date ranges** for time-based queries
-3. **Sort consistently** to improve cache performance
-4. **Implement client-side caching** for static data
-
-### Version Management
-
-1. **Track version counts** to detect updates
-2. **Use version_id** for reproducible results
-3. **Cache version lists** as they change infrequently
-4. **Implement version-aware** client logic
-
-## Examples and Use Cases
-
-### Real-time Data Synchronization
-
-```typescript
-// Check for updates and sync data
-async function syncNamespaceData(namespaceId: string) {
-  const current = await lookup.namespace(namespaceId);
-  const cached = getCachedVersion(namespaceId);
-  
-  if (current.version_count > cached.version_count) {
-    // Fetch and cache updated data
-    await updateCache(namespaceId, current);
-    
-    // Sync registries if needed
-    const registries = await query.registriesByNamespace(namespaceId);
-    await syncRegistries(registries.data.registries);
-  }
-}
-```
-
-### Advanced Search Implementation
-
-```typescript
-// Multi-criteria registry search
-async function searchRegistries(criteria: SearchCriteria) {
-  const results = await query.registriesByNamespace(criteria.namespace, {
-    from: criteria.dateRange.start,
-    to: criteria.dateRange.end,
-    name: criteria.searchTerm,
-    sort: 'date',
-    page: criteria.page,
-    page_size: 20
-  });
-  
-  // Filter by tag if specified
-  if (criteria.schemaTag) {
-    const taggedRegistries = await query.registriesByTag(criteria.schemaTag);
-    return filterAndMerge(results.data, taggedRegistries.data);
-  }
-  
-  return results.data;
-}
-```
-
-### Historical Analysis
-
-```typescript
-// Analyze resource evolution over time
-async function analyzeResourceHistory(namespace: string, registry: string) {
-  const versions = await version.registry(namespace, registry);
-  const analysis = {
-    totalVersions: versions.data.total_versions,
-    evolutionTimeline: [],
-    schemaChanges: []
-  };
-  
-  // Fetch each version for comparison
-  for (const versionId of versions.data.versions) {
-    const versionData = await lookup.registry(namespace, registry, { version_id: versionId });
-    analysis.evolutionTimeline.push({
-      version: versionId,
-      timestamp: versionData.data.updated_at,
-      changes: compareSchemas(versionData.data.schema)
-    });
-  }
-  
-  return analysis;
-}
-```
+- `access.md` in the current collection is not an auth-only surface; most endpoints are public lookup and query endpoints.
+- Successful lookup responses are expected to include proof data such as `data.proof.digest` for downstream verification workflows.
+- The separate `Lookup Verification` page documents how those lookup responses are verified and logged.
