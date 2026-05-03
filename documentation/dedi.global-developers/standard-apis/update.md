@@ -1,6 +1,8 @@
 # Update Management APIs
 
-Update Management APIs let you modify existing namespaces, registries, and records without changing their identifiers. All endpoints in this section require authentication.
+Update Management APIs let you modify existing namespaces, registries, and records while preserving their identifiers and keeping the latest state discoverable through lookup and version APIs.
+
+All endpoints in this section require authentication.
 
 ## Authentication
 
@@ -9,9 +11,19 @@ Use either of the supported authentication methods described in [Authentication 
 - API key authentication using `Authorization: Bearer <api_key>`
 - Auth cookie authentication for browser-based sessions
 
+## When To Use Update APIs
+
+Use these endpoints when the resource already exists and you need to change its descriptive or data payload fields without deleting and recreating it.
+
+Typical examples:
+
+- Update a namespace name or description after an internal rebrand
+- Update registry metadata or description when a data catalog evolves
+- Update record details after business data changes
+
 ## Update Namespace
 
-Updates namespace metadata. The current collection requires at least `name` or `description`.
+Updates namespace metadata. The current collection explicitly notes that at least `name` or `description` is required.
 
 **Endpoint:** `POST /dedi/{namespace}/update-namespace`
 
@@ -28,6 +40,15 @@ Updates namespace metadata. The current collection requires at least `name` or `
 }
 ```
 
+**Field Notes:**
+- `name` (optional): New namespace display name
+- `description` (optional): Updated description
+- `meta` (optional): Additional namespace metadata as JSON
+- `ttl` (optional): Time-to-live value
+
+**Collection Constraint:**
+- Provide at least `name` or `description`
+
 **Example Request:**
 ```typescript
 const response = await fetch('https://api.dedi.global/dedi/acme/update-namespace', {
@@ -40,7 +61,10 @@ const response = await fetch('https://api.dedi.global/dedi/acme/update-namespace
   body: JSON.stringify({
     name: 'Acme Namespace',
     description: 'Updated namespace description',
-    meta: {},
+    meta: {
+      owner: 'platform-team',
+      environment: 'production'
+    },
     ttl: 3600
   })
 });
@@ -67,7 +91,7 @@ const data = await response.json();
 
 ## Update Registry
 
-Updates registry metadata using the registry update endpoint.
+Updates registry metadata using the current registry update endpoint.
 
 **Endpoint:** `POST /dedi/{namespace}/{registry_name}/update-registry`
 
@@ -84,6 +108,11 @@ Updates registry metadata using the registry update endpoint.
 }
 ```
 
+**Field Notes:**
+- `description` (optional): Updated registry description
+- `meta` (optional): Updated registry metadata
+- `ttl` (optional): Time-to-live value
+
 **Example Request:**
 ```typescript
 const response = await fetch('https://api.dedi.global/dedi/acme/products/update-registry', {
@@ -95,7 +124,10 @@ const response = await fetch('https://api.dedi.global/dedi/acme/products/update-
   },
   body: JSON.stringify({
     description: 'Updated registry description',
-    meta: {},
+    meta: {
+      classification: 'internal',
+      steward: 'catalog-admin'
+    },
     ttl: 3600
   })
 });
@@ -122,7 +154,7 @@ const data = await response.json();
 
 ## Update Record
 
-Updates a draft in place or creates a new live version for a live record.
+Updates a draft in place or creates a new live version for a live record, as described in the current collection.
 
 **Endpoint:** `POST /dedi/{namespace}/{registry_name}/{record_name}/update-record`
 
@@ -145,6 +177,13 @@ Updates a draft in place or creates a new live version for a live record.
 }
 ```
 
+**Field Notes:**
+- `details` (required in the collection example): Updated record payload
+- `description` (optional): Updated record description
+- `meta` (optional): Updated record metadata
+- `valid_till` (optional): Valid-until timestamp
+- `ttl` (optional): Time-to-live value
+
 **Example Request:**
 ```typescript
 const response = await fetch('https://api.dedi.global/dedi/acme/products/item-001/update-record', {
@@ -160,7 +199,9 @@ const response = await fetch('https://api.dedi.global/dedi/acme/products/item-00
       name: 'Updated Entity',
       description: 'Updated sample value'
     },
-    meta: {},
+    meta: {
+      change_reason: 'quarterly refresh'
+    },
     valid_till: '2026-12-31T23:59:59Z',
     ttl: 3600
   })
@@ -189,5 +230,5 @@ const data = await response.json();
 ## Notes
 
 - Set `Content-Type: application/json` and `Accept: application/json` for all update endpoints.
-- The Postman collection models record updates as state-aware: drafts are updated in place, while live records create a new version.
-- Use the state management endpoints for deletion, restoration, and registry activation changes rather than update endpoints.
+- The collection models record updates as state-aware: drafts are updated in place, while live records create a new version.
+- Use State Management APIs for deletion, restoration, and registry activation changes.

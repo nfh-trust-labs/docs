@@ -9,6 +9,17 @@ Use either of the supported authentication methods described in [Authentication 
 - API key authentication using `Authorization: Bearer <api_key>`
 - Auth cookie authentication for browser-based sessions
 
+## Why Use Lookup Verification
+
+Lookup APIs return proof-bearing objects. Verification endpoints let you submit those lookup responses back to DeDi.global so the platform can validate them and store an audit log of the verification attempt.
+
+Typical use cases:
+
+- Verify a namespace response before trusting ownership or verification status
+- Verify a registry lookup before consuming its schema
+- Verify a record lookup before using the returned business data
+- Keep an audit trail of who verified which response and when
+
 ## Verify Namespace Lookup
 
 Verifies a namespace lookup response object and stores a verification log.
@@ -46,6 +57,23 @@ Verifies a namespace lookup response object and stores a verification log.
     }
   }
 }
+```
+
+**Example Request:**
+```typescript
+const response = await fetch('https://api.dedi.global/dedi/verify-namespace-lookup', {
+  method: 'POST',
+  headers: {
+    'Authorization': 'Bearer YOUR_API_KEY',
+    'Content-Type': 'application/json',
+    'Accept': 'application/json'
+  },
+  body: JSON.stringify({
+    namespace_lookup_response: namespaceLookupResponse
+  })
+});
+
+const data = await response.json();
 ```
 
 **Allowed Status Codes:**
@@ -96,6 +124,23 @@ Verifies a registry lookup response object and stores a verification log.
     }
   }
 }
+```
+
+**Example Request:**
+```typescript
+const response = await fetch('https://api.dedi.global/dedi/verify-registry-lookup', {
+  method: 'POST',
+  headers: {
+    'Authorization': 'Bearer YOUR_API_KEY',
+    'Content-Type': 'application/json',
+    'Accept': 'application/json'
+  },
+  body: JSON.stringify({
+    registry_lookup_response: registryLookupResponse
+  })
+});
+
+const data = await response.json();
 ```
 
 **Allowed Status Codes:**
@@ -150,6 +195,23 @@ Verifies a record lookup response object and stores a verification log.
 }
 ```
 
+**Example Request:**
+```typescript
+const response = await fetch('https://api.dedi.global/dedi/verify-record-lookup', {
+  method: 'POST',
+  headers: {
+    'Authorization': 'Bearer YOUR_API_KEY',
+    'Content-Type': 'application/json',
+    'Accept': 'application/json'
+  },
+  body: JSON.stringify({
+    record_lookup_response: recordLookupResponse
+  })
+});
+
+const data = await response.json();
+```
+
 **Allowed Status Codes:**
 - `200` - Verification completed
 - `400` - Invalid verification payload
@@ -166,15 +228,28 @@ Returns namespace lookup verification logs.
 **Path Parameters:**
 - `namespace` (required): Namespace ID or verified domain
 
+**Example Request:**
+```typescript
+const response = await fetch('https://api.dedi.global/dedi/acme/get-namespace-verification-logs', {
+  method: 'GET',
+  headers: {
+    'Authorization': 'Bearer YOUR_API_KEY',
+    'Accept': 'application/json'
+  }
+});
+
+const data = await response.json();
+```
+
+**Success Response Requirements In Collection:**
+- `message`
+- `data.logs`
+
 **Allowed Status Codes:**
 - `200` - Logs returned
 - `400` - Invalid input
 - `401` - Authentication failed
 - `500` - Internal server error
-
-**Success Response Requirements in Collection:**
-- `message`
-- `data.logs`
 
 ## Get Registry Verification Logs
 
@@ -186,16 +261,16 @@ Returns registry lookup verification logs.
 - `namespace` (required): Namespace ID or verified domain
 - `registry_name` (required): Registry name
 
+**Success Response Requirements In Collection:**
+- `message`
+- `data.logs`
+
 **Allowed Status Codes:**
 - `200` - Logs returned
 - `400` - Invalid input
 - `401` - Authentication failed
 - `404` - Namespace or registry not found
 - `500` - Internal server error
-
-**Success Response Requirements in Collection:**
-- `message`
-- `data.logs`
 
 ## Get Record Verification Logs
 
@@ -208,16 +283,16 @@ Returns record lookup verification logs.
 - `registry_name` (required): Registry name
 - `record_name` (required): Record name
 
+**Success Response Requirements In Collection:**
+- `message`
+- `data.logs`
+
 **Allowed Status Codes:**
 - `200` - Logs returned
 - `400` - Invalid input
 - `401` - Authentication failed
 - `404` - Namespace, registry, or record not found
 - `500` - Internal server error
-
-**Success Response Requirements in Collection:**
-- `message`
-- `data.logs`
 
 ## Notes
 

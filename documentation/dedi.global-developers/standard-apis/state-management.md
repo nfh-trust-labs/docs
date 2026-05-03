@@ -1,6 +1,8 @@
 # State Management APIs
 
-State Management APIs cover soft deletion, registry activation changes, deleted-resource discovery, and restoration flows. All endpoints in this section require authentication.
+State Management APIs cover soft deletion, registry activation changes, deleted-resource discovery, and restoration flows.
+
+All endpoints in this section require authentication.
 
 ## Authentication
 
@@ -8,6 +10,16 @@ Use either of the supported authentication methods described in [Authentication 
 
 - API key authentication using `Authorization: Bearer <api_key>`
 - Auth cookie authentication for browser-based sessions
+
+## State Management Model
+
+The current collection models state management around three main workflows:
+
+- Soft-delete resources into deleted tables
+- Inactivate and reactivate registries
+- Restore previously deleted resources
+
+This replaces the older suspend or revoke style documentation that was previously in this page.
 
 ## Delete Namespace
 
@@ -23,6 +35,24 @@ Moves a namespace into deleted tables for later recovery.
 {
   "reason": "cleanup"
 }
+```
+
+**Field Notes:**
+- `reason` (optional): Human-readable deletion reason
+
+**Example Request:**
+```typescript
+const response = await fetch('https://api.dedi.global/dedi/acme/delete-namespace', {
+  method: 'DELETE',
+  headers: {
+    'Authorization': 'Bearer YOUR_API_KEY',
+    'Content-Type': 'application/json',
+    'Accept': 'application/json'
+  },
+  body: JSON.stringify({ reason: 'cleanup' })
+});
+
+const data = await response.json();
 ```
 
 **Allowed Status Codes:**
@@ -48,6 +78,24 @@ Moves a registry and its records into deleted tables.
 {
   "reason": "cleanup"
 }
+```
+
+**Field Notes:**
+- `reason` (optional): Human-readable deletion reason
+
+**Example Request:**
+```typescript
+const response = await fetch('https://api.dedi.global/dedi/acme/products/delete-registry', {
+  method: 'DELETE',
+  headers: {
+    'Authorization': 'Bearer YOUR_API_KEY',
+    'Content-Type': 'application/json',
+    'Accept': 'application/json'
+  },
+  body: JSON.stringify({ reason: 'cleanup' })
+});
+
+const data = await response.json();
 ```
 
 **Allowed Status Codes:**
@@ -78,6 +126,28 @@ Deletes one or more records by name.
 }
 ```
 
+**Field Notes:**
+- `records` (required): Array of record names to delete
+- `reason` (optional): Human-readable deletion reason
+
+**Example Request:**
+```typescript
+const response = await fetch('https://api.dedi.global/dedi/acme/products/delete-records', {
+  method: 'DELETE',
+  headers: {
+    'Authorization': 'Bearer YOUR_API_KEY',
+    'Content-Type': 'application/json',
+    'Accept': 'application/json'
+  },
+  body: JSON.stringify({
+    records: ['item-001', 'item-002'],
+    reason: 'cleanup'
+  })
+});
+
+const data = await response.json();
+```
+
 **Allowed Status Codes:**
 - `200` - Records deleted
 - `400` - Invalid request body
@@ -98,6 +168,19 @@ Moves a live registry into inactive state.
 
 **Request Body:**
 No request body is required.
+
+**Example Request:**
+```typescript
+const response = await fetch('https://api.dedi.global/dedi/acme/products/inactivate-registry', {
+  method: 'POST',
+  headers: {
+    'Authorization': 'Bearer YOUR_API_KEY',
+    'Accept': 'application/json'
+  }
+});
+
+const data = await response.json();
+```
 
 **Allowed Status Codes:**
 - `200` - Registry inactivated
@@ -120,6 +203,19 @@ Moves an inactive registry back to live state.
 **Request Body:**
 No request body is required.
 
+**Example Request:**
+```typescript
+const response = await fetch('https://api.dedi.global/dedi/acme/products/reactivate-registry', {
+  method: 'POST',
+  headers: {
+    'Authorization': 'Bearer YOUR_API_KEY',
+    'Accept': 'application/json'
+  }
+});
+
+const data = await response.json();
+```
+
 **Allowed Status Codes:**
 - `200` - Registry reactivated
 - `400` - Invalid state transition or request
@@ -138,8 +234,6 @@ Lists deleted namespaces accessible to the current user.
 No request body is required.
 
 **Success Response:**
-- `200 OK`
-
 ```json
 {
   "message": "Deleted namespaces fetched successfully",
@@ -163,8 +257,6 @@ Lists deleted registries accessible to the current user.
 No request body is required.
 
 **Success Response:**
-- `200 OK`
-
 ```json
 {
   "message": "Deleted registries fetched successfully",
@@ -194,8 +286,6 @@ Lists deleted records accessible through current registry authorizations.
 No request body is required.
 
 **Success Response:**
-- `200 OK`
-
 ```json
 {
   "message": "Deleted records fetched successfully",
@@ -228,6 +318,21 @@ Restores a deleted namespace by `namespace_id`.
 }
 ```
 
+**Example Request:**
+```typescript
+const response = await fetch('https://api.dedi.global/dedi/restore/namespace', {
+  method: 'POST',
+  headers: {
+    'Authorization': 'Bearer YOUR_API_KEY',
+    'Content-Type': 'application/json',
+    'Accept': 'application/json'
+  },
+  body: JSON.stringify({ namespace_id: 'namespace-id' })
+});
+
+const data = await response.json();
+```
+
 **Allowed Status Codes:**
 - `200` - Namespace restored
 - `400` - Invalid request body
@@ -251,6 +356,11 @@ Restores a deleted registry. Provide `deleted_history_id` when multiple deleted 
   "deleted_history_id": "history-id"
 }
 ```
+
+**Field Notes:**
+- `namespace_id` (required): Namespace containing the deleted registry
+- `registry_name` (required): Registry to restore
+- `deleted_history_id` (optional in defaults): Disambiguates multiple deleted histories for the same name
 
 **Allowed Status Codes:**
 - `200` - Registry restored
@@ -281,6 +391,34 @@ Restores deleted records. Provide `deleted_history_id` when multiple deleted his
 }
 ```
 
+**Field Notes:**
+- `records` (required): Array of restore instructions
+- `deleted_history_id` (optional in defaults): Used when a record name has multiple deleted histories
+
+**Example Request:**
+```typescript
+const response = await fetch('https://api.dedi.global/dedi/restore/records', {
+  method: 'POST',
+  headers: {
+    'Authorization': 'Bearer YOUR_API_KEY',
+    'Content-Type': 'application/json',
+    'Accept': 'application/json'
+  },
+  body: JSON.stringify({
+    records: [
+      {
+        namespace_id: 'namespace-id',
+        registry_name: 'products',
+        record_name: 'item-001',
+        deleted_history_id: 'history-id'
+      }
+    ]
+  })
+});
+
+const data = await response.json();
+```
+
 **Allowed Status Codes:**
 - `200` - Records restored
 - `400` - Invalid request body
@@ -292,7 +430,6 @@ Restores deleted records. Provide `deleted_history_id` when multiple deleted his
 
 ## Notes
 
-- The current Postman collection models deletion as a recoverable flow backed by deleted-resource tables.
+- The current collection models deletion as a recoverable flow backed by deleted-resource tables.
 - Restoration is split by resource type: namespace, registry, and records each use separate restore endpoints.
-- `deleted_history_id` is optional in the collection defaults, but it is specifically called out for cases where multiple deleted histories exist for the same resource name.
-- The older suspend, reinstate, and revoke flows are not part of the current collection for this section.
+- `deleted_history_id` is optional in the collection defaults, but is specifically relevant when multiple deleted histories exist for the same resource name.

@@ -2,6 +2,8 @@
 
 Access APIs provide lookup, query, version-history, and export endpoints for namespaces, registries, and records.
 
+These APIs are primarily used to read published data, inspect historical versions, and export record sets for downstream use.
+
 ## Authentication
 
 The current Postman collection marks most Access APIs as public.
@@ -14,6 +16,15 @@ The current Postman collection marks most Access APIs as public.
 - Authentication required:
   - CSV export endpoint
 
+## Access API Categories
+
+The current collection groups access endpoints into four practical categories:
+
+- **Lookup**: Fetch a specific namespace, registry, or record
+- **Query**: Search through registries or records using filters
+- **Version**: List the known versions of a resource
+- **Export**: Download record data as CSV
+
 ## Lookup APIs
 
 ## Namespace Lookup
@@ -25,16 +36,43 @@ Public namespace lookup by namespace ID or domain.
 **Path Parameters:**
 - `namespace` (required): Namespace ID or verified domain
 
+**Example Request:**
+```typescript
+const response = await fetch('https://api.dedi.global/dedi/lookup/acme', {
+  method: 'GET',
+  headers: {
+    'Accept': 'application/json'
+  }
+});
+
+const data = await response.json();
+```
+
+**Success Response Requirements In Collection:**
+- `message`
+- `data.namespace_id`
+- `data.proof.digest`
+
+**Illustrative Success Shape:**
+```json
+{
+  "message": "Namespace details retrieved successfully",
+  "data": {
+    "namespace_id": "namespace-id",
+    "name": "Acme Namespace",
+    "description": "Namespace for production data",
+    "proof": {
+      "digest": "proof-digest"
+    }
+  }
+}
+```
+
 **Allowed Status Codes:**
 - `200` - Namespace returned
 - `400` - Invalid lookup input
 - `404` - Namespace not found
 - `500` - Internal server error
-
-**Success Response Requirements in Collection:**
-- `message`
-- `data.namespace_id`
-- `data.proof.digest`
 
 ## Registry Lookup
 
@@ -46,16 +84,45 @@ Public registry lookup.
 - `namespace` (required): Namespace ID or verified domain
 - `registry_name` (required): Registry name
 
+**Example Request:**
+```typescript
+const response = await fetch('https://api.dedi.global/dedi/lookup/acme/employees', {
+  method: 'GET',
+  headers: {
+    'Accept': 'application/json'
+  }
+});
+
+const data = await response.json();
+```
+
+**Success Response Requirements In Collection:**
+- `message`
+- `data.registry_id`
+- `data.proof.digest`
+
+**Illustrative Success Shape:**
+```json
+{
+  "message": "Resource retrieved successfully",
+  "data": {
+    "registry_id": "registry-id",
+    "registry_name": "employees",
+    "description": "Employee registry",
+    "schema": {},
+    "tag": "membership",
+    "proof": {
+      "digest": "proof-digest"
+    }
+  }
+}
+```
+
 **Allowed Status Codes:**
 - `200` - Registry returned
 - `400` - Invalid lookup input
 - `404` - Namespace or registry not found
 - `500` - Internal server error
-
-**Success Response Requirements in Collection:**
-- `message`
-- `data.registry_id`
-- `data.proof.digest`
 
 ## Record Lookup
 
@@ -72,9 +139,51 @@ Public record lookup with optional historical query parameters.
 - `version_id` (optional): Specific record version to return
 - `as_on` (optional): Historical lookup timestamp/filter value
 
+**Optional Query Behavior:**
+- Use `version_id` when you already know the exact version you want
+- Use `as_on` when you want the record view as of a specific point in time
+
 **Example Request:**
 ```http
 GET /dedi/lookup/acme/products/item-001?version_id=v1&as_on=2026-01-01T00:00:00Z
+```
+
+**JavaScript Example:**
+```typescript
+const response = await fetch(
+  'https://api.dedi.global/dedi/lookup/acme/products/item-001?version_id=v1&as_on=2026-01-01T00:00:00Z',
+  {
+    method: 'GET',
+    headers: {
+      'Accept': 'application/json'
+    }
+  }
+);
+
+const data = await response.json();
+```
+
+**Success Response Requirements In Collection:**
+- `message`
+- `data.record_id`
+- `data.proof.digest`
+
+**Illustrative Success Shape:**
+```json
+{
+  "message": "Resource retrieved successfully",
+  "data": {
+    "record_id": "record-id",
+    "record_name": "item-001",
+    "description": "Product record",
+    "details": {
+      "name": "Sample Entity"
+    },
+    "proof": {
+      "digest": "proof-digest"
+    }
+  }
+}
 ```
 
 **Allowed Status Codes:**
@@ -82,11 +191,6 @@ GET /dedi/lookup/acme/products/item-001?version_id=v1&as_on=2026-01-01T00:00:00Z
 - `400` - Invalid lookup input
 - `404` - Namespace, registry, or record not found
 - `500` - Internal server error
-
-**Success Response Requirements in Collection:**
-- `message`
-- `data.record_id`
-- `data.proof.digest`
 
 ## Query APIs
 
@@ -109,15 +213,20 @@ Public registry query within a namespace.
 - `page_size` (optional)
 - `as_on` (optional)
 
+**Example Request:**
+```http
+GET /dedi/query/acme?status=active&name=employee&sort=date&page=1&page_size=20
+```
+
+**Success Response Requirements In Collection:**
+- `message`
+- `data.registries`
+
 **Allowed Status Codes:**
 - `200` - Registries returned
 - `400` - Invalid query input
 - `404` - Namespace not found
 - `500` - Internal server error
-
-**Success Response Requirements in Collection:**
-- `message`
-- `data.registries`
 
 ## Registry Query (Records)
 
@@ -139,17 +248,22 @@ Public record query within a registry.
 - `page_size` (optional)
 - `as_on` (optional)
 
+**Example Request:**
+```http
+GET /dedi/query/acme/employees?state=live&name=john&sort=name&page=1&page_size=10
+```
+
+**Success Response Requirements In Collection:**
+- `message`
+- `data.records`
+
 **Allowed Status Codes:**
 - `200` - Records returned
 - `400` - Invalid query input
 - `404` - Namespace or registry not found
 - `500` - Internal server error
 
-**Success Response Requirements in Collection:**
-- `message`
-- `data.records`
-
-## Query Registries by Tag
+## Query Registries By Tag
 
 Lists verified registries associated with a schema tag.
 
@@ -158,14 +272,26 @@ Lists verified registries associated with a schema tag.
 **Path Parameters:**
 - `registry_tag` (required): Schema tag to query
 
+**Example Request:**
+```typescript
+const response = await fetch('https://api.dedi.global/dedi/membership/get-registry-by-tag', {
+  method: 'GET',
+  headers: {
+    'Accept': 'application/json'
+  }
+});
+
+const data = await response.json();
+```
+
+**Success Response Requirements In Collection:**
+- `message`
+- `data.registries`
+
 **Allowed Status Codes:**
 - `200` - Registries returned
 - `400` - Invalid tag input
 - `500` - Internal server error
-
-**Success Response Requirements in Collection:**
-- `message`
-- `data.registries`
 
 ## Version APIs
 
@@ -178,15 +304,15 @@ Public namespace version list.
 **Path Parameters:**
 - `namespace` (required): Namespace ID or verified domain
 
+**Success Response Requirements In Collection:**
+- `message`
+- `data.versions`
+
 **Allowed Status Codes:**
 - `200` - Versions returned
 - `400` - Invalid input
 - `404` - Namespace not found
 - `500` - Internal server error
-
-**Success Response Requirements in Collection:**
-- `message`
-- `data.versions`
 
 ## Registry Version List
 
@@ -198,15 +324,15 @@ Public registry version list.
 - `namespace` (required): Namespace ID or verified domain
 - `registry_name` (required): Registry name
 
+**Success Response Requirements In Collection:**
+- `message`
+- `data.versions`
+
 **Allowed Status Codes:**
 - `200` - Versions returned
 - `400` - Invalid input
 - `404` - Namespace or registry not found
 - `500` - Internal server error
-
-**Success Response Requirements in Collection:**
-- `message`
-- `data.versions`
 
 ## Record Version List
 
@@ -219,19 +345,19 @@ Public record version list.
 - `registry_name` (required): Registry name
 - `record_name` (required): Record name
 
+**Success Response Requirements In Collection:**
+- `message`
+- `data.versions`
+
 **Allowed Status Codes:**
 - `200` - Versions returned
 - `400` - Invalid input
 - `404` - Namespace, registry, or record not found
 - `500` - Internal server error
 
-**Success Response Requirements in Collection:**
-- `message`
-- `data.versions`
-
 ## Export APIs
 
-## Export Records as CSV
+## Export Records As CSV
 
 Exports registry records as CSV. The collection explicitly requires authentication for this endpoint.
 
@@ -252,6 +378,20 @@ Exports registry records as CSV. The collection explicitly requires authenticati
 
 **Headers:**
 - `Accept: text/csv`
+
+**Example Request:**
+```typescript
+const response = await fetch(
+  'https://api.dedi.global/dedi/acme/employees/export-as-csv?state=live',
+  {
+    method: 'GET',
+    headers: {
+      'Authorization': 'Bearer YOUR_API_KEY',
+      'Accept': 'text/csv'
+    }
+  }
+);
+```
 
 **Allowed Status Codes:**
 - `200` - CSV returned
