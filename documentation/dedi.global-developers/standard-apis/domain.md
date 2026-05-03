@@ -1,400 +1,279 @@
 # Domain Verification APIs
 
-Domain verification is a critical trust mechanism that enhances the credibility and authenticity of namespaces on DeDi.global. By proving ownership of a domain, organizations can establish verified namespaces that users can trust.
+The Domain Verification APIs manage namespace verification, stored DNS verification material, and verification-request notifications.
 
-**Authentication**: 🔒 All Domain Verification APIs require authentication via API key.
+🔒 **Authentication Required**: Every endpoint in this section requires authentication.
 
-## Why Domain Verification Matters
+## Endpoints Overview
 
-### Trust Through Domain Ownership
+| Endpoint | Method | Purpose |
+| --- | --- | --- |
+| `/dedi/generate-dns-txt/{namespace}/{domain}` | `GET` | Generate or reuse verification TXT material |
+| `/dedi/verify-domain` | `POST` | Complete domain verification |
+| `/dedi/check-verification/{namespace}` | `GET` | Check namespace verification status |
+| `/dedi/get-dns-txt/{namespace}` | `GET` | Get stored DNS TXT material |
+| `/dedi/{namespace}/{domain}/remove-namespace-verification` | `POST` | Remove namespace verification |
+| `/dedi/notifications/pending` | `GET` | List unread verification notifications |
+| `/dedi/notifications/history` | `GET` | List read verification notifications |
+| `/dedi/notifications/read-all` | `POST` | Mark all verification notifications as read |
+| `/dedi/notifications/{notification_id}/read` | `POST` | Mark one verification notification as read |
+| `/dedi/verification-requests/{request_id}/accept` | `POST` | Accept a verification request |
+| `/dedi/verification-requests/{request_id}/reject` | `POST` | Reject a verification request |
 
-Domains are the fundamental source of identity on the internet. They represent a unique, globally recognized identifier that only the legitimate owner can control. The internet's trust infrastructure is built around domain ownership - when you visit `microsoft.com`, you trust that Microsoft Corporation owns and controls that domain.
+## Verification Models
 
-DeDi.global leverages this established trust mechanism to bring the same level of confidence to decentralized data. By allowing namespace owners to attach verified domains to their namespaces, we create a bridge between traditional web trust and decentralized identity.
+The current Postman collection documents multiple verification modes via `verification_method`:
 
-### The Verification Advantage
+- `self_dns`
+- `self_http`
+- `request_other_namespace`
 
-Consider a scenario where multiple organizations create namespaces with similar names like "TechCorp", "TechCorp-Official", or "TechCorp-Inc". Without domain verification, users have no reliable way to distinguish between legitimate and potentially fraudulent namespaces.
+When `verification_method=request_other_namespace`, the `target_namespace` query parameter is used.
 
-However, when the legitimate TechCorp organization verifies their namespace using their domain `techcorp.com`, they gain:
+## Generate DNS TXT
 
-- **🎯 Authentic Identity**: Clear proof of legitimacy through domain ownership
-- **⭐ Enhanced Trust**: Verified status increases user confidence and adoption
-- **🛡️ Brand Protection**: Differentiation from potentially misleading similar namespaces
-- **📈 Better Discovery**: Verified namespaces receive priority in search and recommendations
+Generates or reuses verification TXT material for namespace domain verification.
 
-### Real-World Example
+**Endpoint**: `GET /dedi/generate-dns-txt/{namespace}/{domain}?verification_method={method}&target_namespace={target}`
 
-Imagine three namespaces exist:
-- `global-bank` (unverified)
-- `globalbank-official` (unverified) 
-- `global-bank-verified` (verified with `globalbank.com`)
+**Path Parameters**:
 
-Users interacting with financial data would naturally trust the domain-verified namespace, knowing that only the real Global Bank can control the `globalbank.com` domain.
+- `namespace`: namespace identifier
+- `domain`: domain being verified
 
-## How Domain Verification Works
+**Query Parameters**:
 
-The verification process follows a secure, industry-standard DNS-based validation:
+- `verification_method`: `self_dns`, `self_http`, or `request_other_namespace`
+- `target_namespace`: required only for `request_other_namespace`
 
-### 1. **Namespace Creation**
-First, create your namespace using the [Create Namespace API](./publish.md#create-namespace):
+**Success Response**:
 
-```typescript
-const namespaceResponse = await fetch('https://api.dedi.global/dedi/create-namespace', {
-  method: 'POST',
-  headers: {
-    'Authorization': 'Bearer YOUR_API_KEY',
-    'Content-Type': 'application/json'
-  },
-  body: JSON.stringify({
-    name: 'techcorp-data',
-    description: 'TechCorp official data namespace',
-    meta: {
-      company: 'TechCorp Inc.',
-      industry: 'Technology'
-    }
-  })
-});
-```
+- `200 OK`
+- Includes `message`
+- May include `txt` or `data.txt`
+- May include `data.request_id`
 
-### 2. **Domain Whitelisting**
-Before generating DNS TXT records, your domain must be whitelisted in the DeDi.global system:
+**Error Status Codes**:
 
-> **📞 Contact Required**: To get your domain whitelisted for verification, please reach out to the DeDi.global team through our support channels. This security measure prevents abuse and ensures domain legitimacy.
+- `400`
+- `401`
+- `404`
+- `500`
 
-### 3. **DNS TXT Generation**
-Generate a unique verification string using the [Generate DNS TXT API](#generate-dns-txt-record):
+## Verify Domain
 
-```typescript
-const txtResponse = await fetch('https://api.dedi.global/dedi/generate-dns-txt/your-namespace-id/techcorp.com', {
-  method: 'GET',
-  headers: {
-    'Authorization': 'Bearer YOUR_API_KEY',
-    'Content-Type': 'application/json'
-  }
-});
-```
+Checks whether namespace domain verification can be completed.
 
-### 4. **DNS Configuration**
-Add the generated TXT record to your domain's DNS settings through your domain provider (GoDaddy, Cloudflare, Route 53, etc.):
+**Endpoint**: `POST /dedi/verify-domain`
 
-```
-Record Type: TXT
-Host: @ (or your domain)
-Value: [generated verification string] <-- make sure you copy the entire DNS TXT(i.e. dedi-verification=abcdefg1234567)
-TTL: 300 (or minimum allowed)
-```
+**Request Body**:
 
-### 5. **Verification**
-Once DNS propagation is complete (usually 5-30 minutes), verify your domain using the [Verify Domain API](#verify-domain-ownership):
-
-```typescript
-const verifyResponse = await fetch('https://api.dedi.global/dedi/verify-domain', {
-  method: 'POST',
-  headers: {
-    'Authorization': 'Bearer YOUR_API_KEY',
-    'Content-Type': 'application/json'
-  },
-  body: JSON.stringify({
-    namespace_id: 'your-namespace-id'
-  })
-});
-```
-
-## Domain Verification APIs
-
-### Generate DNS TXT Record
-
-Generate a unique DNS TXT record for domain verification.
-
-**Endpoint:** `GET /dedi/generate-dns-txt/{namespace_id}/{domain}`
-
-**Parameters:**
-- `namespace_id` (path, required): Target namespace identifier
-- `domain` (path, required): Domain to verify (must be whitelisted in global registry)
-
-**Validation Rules:**
-- Domain must contain a dot (valid format)
-- Domain must exist in DeDi.global's whitelisted registry
-- Namespace must exist and not be already verified with another domain
-- Domain cannot be already verified by another namespace
-
-**Example Request:**
-```typescript
-const response = await fetch('https://api.dedi.global/dedi/generate-dns-txt/did:cord:3yVazTQMc.../techcorp.com', {
-  method: 'GET',
-  headers: {
-    'Authorization': 'Bearer YOUR_API_KEY',
-    'Content-Type': 'application/json'
-  }
-});
-
-const data = await response.json();
-```
-
-**Success Response (200):**
-```typescript
+```json
 {
-  "message": "Generated domain's DNS TXT record",
-  "txt": "dedi-verification=abcdefg1234567"
+  "namespace_id": "<namespace>",
+  "domain": "example.com"
 }
 ```
 
-**TXT Record Already Exists (200):**
-```typescript
-{
-  "message": "TXT is already generated",
-  "data": {
-    "txt": "dedi-verification=abcdefg1234567"
-  }
-}
-```
+**Success Response**:
 
-**Error Responses:**
-- `400` - Invalid domain format, domain not in global registry, or namespace already verified
-- `404` - Namespace not found
-- `500` - Failed to generate verification string
+- `200 OK`
+- Includes `message`
 
-### Verify Domain Ownership
+**Error Status Codes**:
 
-Verify domain ownership by checking the TXT record in DNS.
+- `400`
+- `401`
+- `404`
+- `500`
 
-**Endpoint:** `POST /dedi/verify-domain`
+## Check Verification
 
-**Request Body:**
-```typescript
-{
-  namespace_id: string; // Namespace ID to verify
-}
-```
+Returns the verified flag and primary verified domain for the namespace.
 
-**Prerequisites:**
-- TXT record must be generated first using the Generate DNS TXT API
-- TXT record must be added to domain's DNS settings
-- DNS propagation should be complete (allow 5-30 minutes)
+**Endpoint**: `GET /dedi/check-verification/{namespace}`
 
-**Verification Process:**
-1. Validates namespace exists and has an associated domain
-2. Retrieves the generated TXT record from database
-3. Performs DNS TXT record lookup on the domain
-4. Compares found TXT records with generated verification string
-5. Updates namespace and domain verification status if match found
+**Success Response**:
 
-**Example Request:**
-```typescript
-const response = await fetch('https://api.dedi.global/dedi/verify-domain', {
-  method: 'POST',
-  headers: {
-    'Authorization': 'Bearer YOUR_API_KEY',
-    'Content-Type': 'application/json'
-  },
-  body: JSON.stringify({
-    namespace_id: 'did:web:did.cord.network:76E...'
-  })
-});
+- `200 OK`
+- Includes `verified`
 
-const data = await response.json();
-```
+**Error Status Codes**:
 
-**Success Response (200):**
-```typescript
-{
-  "message": "Verification Successful"
-}
-```
+- `400`
+- `401`
+- `404`
+- `500`
 
-**Error Responses:**
-- `400` - Namespace ID missing, domain already in use, or namespace already verified
-- `404` - Namespace not found, TXT not generated, or TXT record not found in DNS
-- `500` - DNS resolution errors
+## Get DNS TXT
 
-**Important Notes:**
-- DNS changes may take time to propagate (typically 5-30 minutes, up to 48 hours in rare cases)
-- Only one domain can be verified per namespace
-- Verified domains cannot be shared between multiple namespaces
+Returns stored TXT material for the namespace domain entry.
 
-### Check Verification Status
+**Endpoint**: `GET /dedi/get-dns-txt/{namespace}`
 
-Check the current verification status of a namespace's associated domain.
+**Success Response**:
 
-**Endpoint:** `GET /dedi/check-verification/{namespace_id}`
+- `200 OK`
+- Includes `namespace_id`
+- Includes `domain`
+- Includes `txt`
 
-**Parameters:**
-- `namespace_id` (path, required): Target namespace ID to check
+**Error Status Codes**:
 
-**Example Request:**
-```typescript
-const response = await fetch('https://api.dedi.global/dedi/check-verification/did:web:did.cord.network:76E...', {
-  method: 'GET',
-  headers: {
-    'Authorization': 'Bearer YOUR_API_KEY',
-    'Content-Type': 'application/json'
-  }
-});
+- `400`
+- `401`
+- `404`
+- `500`
 
-const data = await response.json();
-```
+## Remove Verification
 
-**Verified Namespace Response (200):**
-```typescript
-{
-  "verified": true,
-  "domain": "techcorp.com"
-}
-```
+Removes domain verification rows and related requests for the namespace/domain pair.
 
-**Unverified Namespace Response (200):**
-```typescript
-{
-  "verified": false
-}
-```
+**Endpoint**: `POST /dedi/{namespace}/{domain}/remove-namespace-verification`
 
-**Error Responses:**
-- `400` - Namespace ID required
-- `404` - Namespace not found
-- `500` - Internal server error
+**Success Response**:
 
-**Use Cases:**
-- Check if domain verification is complete before proceeding with operations
-- Retrieve the verified domain name for a namespace
-- Display verification status in user interfaces
-- Validate namespace credibility before trusting data
+- `200 OK`
+- Includes `message`
 
-### Get DNS TXT Record
+**Error Status Codes**:
 
-Retrieve the generated DNS TXT record and verification details for a namespace.
+- `400`
+- `401`
+- `404`
+- `500`
 
-**Endpoint:** `GET /dedi/get-dns-txt/{namespace_id}`
+## Notifications Pending
 
-**Parameters:**
-- `namespace_id` (path, required): Target namespace identifier
+Returns unread verification-request notifications for the authenticated user.
 
-**Example Request:**
-```typescript
-const response = await fetch('https://api.dedi.global/dedi/get-dns-txt/did:web:did.cord.network:76E...', {
-  method: 'GET',
-  headers: {
-    'Authorization': 'Bearer YOUR_API_KEY',
-    'Content-Type': 'application/json'
-  }
-});
+**Endpoint**: `GET /dedi/notifications/pending`
 
-const data = await response.json();
-```
+**Success Response**:
 
-**Success Response (200):**
-```typescript
-{
-  "namespace_id": "did:web:did.cord.network:76E...",
-  "domain": "techcorp.com",
-  "txt": "dedi-verification=abcdefg1234567",
-  "is_verified": true
-}
-```
+- `200 OK`
+- Includes `message`
+- Includes `unread_count`
+- Includes `data`
 
-**Error Responses:**
-- `400` - Namespace ID required
-- `404` - Domain not found for namespace (TXT record not generated)
-- `500` - Internal server error
+**Notes**:
 
-**Use Cases:**
-- Retrieve TXT record after generation for DNS configuration
-- Check domain and current verification status
-- Audit domain verification setup
-- Get verification string for manual DNS configuration
-- Troubleshoot verification issues
+- The Postman collection saves `data[0].id` as `notification_id`
+- The Postman collection saves `data[0].request_id` as `request_id`
 
-### Remove Namespace Verification
+**Error Status Codes**:
 
-Remove domain verification from a namespace, reverting it to unverified status.
+- `400`
+- `401`
+- `500`
 
-**Endpoint:** `POST /dedi/{namespace}/remove-namespace-verification`
+## Notifications History
 
-**Parameters:**
-- `namespace` (path, required): Namespace ID or verified domain name to remove verification from
+Returns already-read verification-request notifications.
 
-**Prerequisites:**
-- Namespace must exist and be currently verified
-- Domain must be associated with the namespace
+**Endpoint**: `GET /dedi/notifications/history`
 
-**Process:**
-1. Validates namespace exists (by ID or domain)
-2. Confirms namespace is currently verified
-3. Removes the domain verification record from database
-4. Resets namespace verification status to false
-5. Clears the domain association from namespace
+**Success Response**:
 
-**Example Request:**
-```typescript
-const response = await fetch('https://api.dedi.global/dedi/techcorp.com/remove-namespace-verification', {
-  method: 'POST',
-  headers: {
-    'Authorization': 'Bearer YOUR_API_KEY',
-    'Content-Type': 'application/json'
-  }
-});
+- `200 OK`
+- Includes `message`
+- Includes `data`
 
-// Or using namespace ID
-const response = await fetch('https://api.dedi.global/dedi/did:web:did.cord.network:76E.../remove-namespace-verification', {
-  method: 'POST',
-  headers: {
-    'Authorization': 'Bearer YOUR_API_KEY',
-    'Content-Type': 'application/json'
-  }
-});
+**Error Status Codes**:
 
-const data = await response.json();
-```
+- `400`
+- `401`
+- `500`
 
-**Success Response (200):**
-```typescript
-{
-  "message": "Namespace verification removed successfully"
-}
-```
+## Notifications Read All
 
-**Error Responses:**
-- `400` - Namespace parameter required
-- `404` - Namespace not found, namespace is not verified, or domain not found for namespace
-- `500` - Internal server error while removing verification
+Marks all unread verification notifications as read.
 
-**Use Cases:**
-- Decommission domain verification when changing domain strategy
-- Reset namespace to unverified state for re-verification with different domain
-- Remove verification due to domain ownership changes
-- Clean up verification when domain is no longer controlled by namespace owner
-- Prepare namespace for transfer to different domain owner
+**Endpoint**: `POST /dedi/notifications/read-all`
 
-**Important Notes:**
-- This action is irreversible - verification must be performed again to re-verify
-- Removing verification does not delete the namespace itself, only the domain association
-- The namespace can be re-verified with the same or different domain after removal
-- Users should be cautious as this reduces the trust level of the namespace
+**Success Response**:
 
-## Best Practices
+- `200 OK`
+- Includes `message`
+- Includes `data.affected`
 
-### DNS Configuration
+**Error Status Codes**:
 
-1. **Use Minimal TTL**: Set TTL to 300 seconds (5 minutes) during verification for faster propagation
-2. **Test Before Verification**: Use online DNS checker tools to confirm TXT record is visible
-3. **Allow Propagation Time**: Wait 5-30 minutes after adding TXT record before attempting verification
+- `400`
+- `401`
+- `500`
 
-### Security Considerations
+## Notification Read
 
-1. **Domain Control**: Only add TXT records if you have legitimate control of the domain
-2. **Monitor Verification Status**: Regularly check verification status to ensure it remains valid
+Marks a single verification notification as read.
 
-### Troubleshooting
+**Endpoint**: `POST /dedi/notifications/{notification_id}/read`
 
-**Common Issues:**
-- **DNS Propagation Delay**: Wait longer and try verification again
-- **Incorrect TXT Record**: Ensure the entire and exact string is copied without modifications
-- **Domain Not Whitelisted**: Contact DeDi.global support to whitelist your domain
-- **Multiple TXT Records**: Some DNS providers require specific formatting for multiple TXT records
+**Success Response**:
 
-**Verification Failed?**
-1. Check TXT record is correctly added to DNS
-2. Verify domain propagation using online DNS tools
-3. Ensure namespace exists and hasn't been verified with another domain
-4. Contact support if domain should be whitelisted but isn't recognized
+- `200 OK`
+- Includes `message`
+
+**Error Status Codes**:
+
+- `400`
+- `401`
+- `404`
+- `500`
+
+## Accept Verification Request
+
+Accepts a pending namespace verification request as a delegate of the target namespace.
+
+**Endpoint**: `POST /dedi/verification-requests/{request_id}/accept`
+
+**Success Response**:
+
+- `200 OK`
+- Includes `message`
+- May include `data.request_id`, `data.registry_id`, and `data.record_id`
+
+**Error Status Codes**:
+
+- `400`
+- `401`
+- `403`
+- `404`
+- `500`
+
+## Reject Verification Request
+
+Rejects a pending namespace verification request.
+
+**Endpoint**: `POST /dedi/verification-requests/{request_id}/reject`
+
+**Success Response**:
+
+- `200 OK`
+- Includes `message`
+
+**Error Status Codes**:
+
+- `400`
+- `401`
+- `403`
+- `404`
+- `500`
+
+## Important Changes Reflected Here
+
+This page has been aligned to the current Postman collection and now reflects several changes beyond basic DNS verification:
+
+- `generate-dns-txt` now documents `verification_method` and `target_namespace`
+- `verify-domain` documents both `namespace_id` and `domain` in the request body
+- `remove-namespace-verification` is documented with both `namespace` and `domain` in the path
+- notification endpoints are included in this section
+- verification-request accept/reject endpoints are included in this section
+
+## Practical Verification Flow
+
+1. Generate verification material with `generate-dns-txt`
+2. Publish the TXT record or follow the configured verification method
+3. Complete verification using `verify-domain`
+4. Check status with `check-verification`
+5. Use notification and verification-request endpoints when cross-namespace approval flows are involved

@@ -1,576 +1,336 @@
 # Publish APIs
 
-The Publish APIs enable you to create and manage the core components of your data infrastructure on DeDi.global. These APIs allow you to organize data hierarchically through namespaces, define structured schemas via registries, and store individual records with full lifecycle management.
+The Publish APIs create and manage namespaces, registries, draft records, and CSV-based bulk upload workflows on DeDi.global.
 
-**Authentication**: 🔒 All Publish APIs require authentication via API key.
+🔒 **Authentication Required**: Every endpoint in this section requires authentication.
+
+## Endpoints Overview
+
+| Endpoint | Method | Purpose |
+| --- | --- | --- |
+| `/dedi/create-namespace` | `POST` | Create a namespace |
+| `/dedi/{namespace}/create-registry` | `POST` | Create a registry in a namespace |
+| `/dedi/{namespace}/{registry_name}/save-record-as-draft` | `POST` | Create a draft record |
+| `/dedi/{namespace}/{registry_name}/publish-records` | `POST` | Publish one or more draft records |
+| `/dedi/bulk-upload` | `POST` | Upload a CSV for background processing |
+| `/dedi/bulk-upload/status/{jobId}` | `GET` | Check bulk-upload job status |
+| `/dedi/bulk-upload/jobs` | `GET` | List your bulk-upload jobs |
+| `/dedi/bulk-upload/failed-entries/{jobId}` | `GET` | View failed CSV entries |
+| `/dedi/bulk-upload/failed-entries/{jobId}/download` | `GET` | Download failed entries as CSV |
+| `/dedi/{namespace}/{registry_name}/download-sample-csv` | `GET` | Download a schema-derived sample CSV |
 
 ## Core Concepts
 
-Before diving into the APIs, it's essential to understand DeDi.global's hierarchical structure:
+- **Namespace**: A top-level container for related registries
+- **Registry**: A schema-backed collection inside a namespace
+- **Record**: A data entry stored in a registry
+- **Draft**: A record created but not yet published
+- **Bulk Upload Job**: An asynchronous CSV import process
 
-- **Namespace**: A top-level container that organizes related registries
-- **Registry**: Defines the structure and schema for a specific type of data
-- **Record**: Individual data entries conforming to a registry's schema
+## Create Namespace
 
-## Namespace Management
-
-Namespaces provide isolation and organization for your data. They act as containers for related registries and can be associated with verified domains for enhanced trust.
-
-### Create Namespace
-
-Create a new namespace to organize your registries and establish data boundaries.
+Creates a namespace and authorizes the creator.
 
 **Endpoint**: `POST /dedi/create-namespace`
 
 **Request Body**:
-```typescript
+
+```json
 {
-  name: string;        // Unique namespace name
-  description: string; // Purpose and description of the namespace
-  meta?: object;       // Optional metadata for additional context
-  version_count?: number; // Optional version number for tracking
+  "name": "my-namespace",
+  "description": "Namespace for production publishing",
+  "meta": {}
 }
 ```
 
-**Example Request**:
-```typescript
-const response = await fetch('https://api.dedi.global/dedi/create-namespace', {
-  method: 'POST',
-  headers: {
-    'Authorization': `Bearer ${your_api_key}`,
-    'Content-Type': 'application/json'
-  },
-  body: JSON.stringify({
-    name: 'employee-directory',
-    description: 'Corporate employee information and credentials',
-    meta: {
-      department: 'Human Resources',
-      company: 'Acme Corporation'
-    }
-  })
-});
+**Success Response**:
 
-const namespace = await response.json();
-```
+- `201 Created`
+- Includes `message`
+- Includes `data.namespace_id`
 
-**Response**:
-```typescript
-{
-  message: string;        // Success confirmation message
-  data: {
-    namespace_id: string; // Unique identifier for the created namespace
-  }
-}
-```
+**Error Status Codes**:
 
-**Error Scenarios**:
-- `400` - Invalid request body or namespace name already exists
-- `401` - Missing or invalid API key
-- `429` - Rate limit exceeded
+- `400`
+- `401`
+- `404`
+- `500`
 
-**Use Cases**:
-- Organizing data by department, project, or domain
-- Creating isolated environments for different applications
-- Setting up customer-specific data spaces
+## Create Registry
 
-## Registry Management
-
-Registries define the structure and validation rules for the data you want to store. They act as templates that ensure data consistency and enable powerful querying capabilities.
-
-### Create Registry
-
-Define a new registry within a namespace to store structured records.
+Creates a registry inside a namespace. The Postman collection currently documents a schema-based example request.
 
 **Endpoint**: `POST /dedi/{namespace}/create-registry`
 
 **Path Parameters**:
-- `namespace` - Namespace ID or verified domain name
+
+- `namespace`: namespace identifier
 
 **Request Body**:
-```typescript
-{
-  registry_name: string;  // Unique registry name within the namespace
-  description: string;    // Description of what this registry stores
-  schema?: object;       // JSON Schema defining record structure (required only for custom tag)
-  tag: 'custom' | 'membership' | 'public_key' | 'revoke' | 'beckn_subscriber' | 'beckn_subscriber_reference'; // Schema classification
-  meta?: object;         // Optional metadata
-}
-```
 
-**Example Request**:
-```typescript
-const registryData = {
-  registry_name: 'employee-profiles',
-  description: 'Employee profile information including roles and contact details',
-  schema: {
-    type: 'object',
-    properties: {
-      employee_id: { type: 'string', pattern: '^EMP[0-9]{6}$' },
-      full_name: { type: 'string', minLength: 1 },
-      email: { type: 'string', format: 'email' },
-      department: { type: 'string', enum: ['Engineering', 'HR', 'Sales'] },
-      hire_date: { type: 'string', format: 'date' },
-      active: { type: 'boolean', default: true }
+```json
+{
+  "registry_name": "my-registry",
+  "description": "Registry created for publishing records",
+  "schema": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "name": {
+        "type": "string"
+      },
+      "description": {
+        "type": "string"
+      }
     },
-    required: ['employee_id', 'full_name', 'email', 'department']
+    "required": ["name"]
   },
-  tag: 'custom',
-  meta: { 
-    version: '1.0',
-    data_classification: 'internal' 
-  }
-};
-
-const response = await fetch(`https://api.dedi.global/dedi/employee-directory/create-registry`, {
-  method: 'POST',
-  headers: {
-    'Authorization': `Bearer ${your_api_key}`,
-    'Content-Type': 'application/json'
-  },
-  body: JSON.stringify(registryData)
-});
-```
-
-**Response**:
-```typescript
-{
-  message: string;        // Success confirmation message
-  data: {
-    registry_id: string;  // Unique registry identifier
-  }
-}
-```
-
-**Schema Tags**:
-DeDi.global currently provides 5 pre-built schemas out of the box:
-- `membership` - Identity and membership data schemas
-- `public_key` - Cryptographic public key schemas
-- `revoke` - Revocation and status tracking schemas
-- `beckn_subscriber` - Beckn protocol subscriber information
-- `beckn_subscriber_reference` - Beckn protocol subscriber reference data
-
-**Note**: When using any of the pre-built schema tags (membership, public_key, revoke, beckn_subscriber, beckn_subscriber_reference), the `schema` field is optional as DeDi.global will use the predefined schema. For custom schemas, set `tag: 'custom'` and provide your own `schema` object.
-
-*For detailed information about these pre-built schemas, please reach out to our support team.*
-
-**Error Scenarios**:
-- `400` - Invalid schema format or registry name already exists
-- `404` - Namespace not found or access denied
-- `403` - Insufficient permissions for the namespace
-
-## Time to Live (TTL) Management
-
-DeDi.global supports automatic expiration of data through Time to Live (TTL) values, which can be set at both the registry and record levels.
-
-### TTL Behavior
-
-- **Registry TTL**: Sets the default TTL(i.e. 600) for the registry. This can be updated as per use.
-- **Record TTL**: Sets the default TTL(i.e. 600) for the records. This can be updated as per use.
-- **Expiration**: Once TTL expires, the cache is cleared.
-- **TTL Units**: Specified in seconds (e.g., 86400 for 24 hours, 604800 for 7 days)
-
-### Setting TTL Values
-
-TTL can be overwritten during updates:
-
-```typescript
-// Registry update to 24 hour TTL
-{
-  "description": "User session data",
-  "tag": "custom",
-  "ttl": 86400, // default is 600
-  "meta": {}
-}
-
-// Record update to 7-day TTL
-{
-  "description": "User session for mobile app",
-  "details": { /* session data */ },
-  "valid_till": , // Expiration date in ISO format
-  "ttl": 604800,
   "meta": {}
 }
 ```
 
-### TTL Best Practices
+**Success Response**:
 
-- **Session Data**: Use short TTL (minutes to hours) for temporary session information
-- **User Profiles**: Use longer TTL (weeks to months) for stable user data
-- **Audit Logs**: Consider no TTL or very long TTL for compliance requirements
-- **Cache Data**: Use short TTL for frequently updated cache entries
+- `201 Created`
+- Includes `message`
+- Includes `data.registry_id`
 
-## Record Management
+**Error Status Codes**:
 
-Records are individual data entries that conform to a registry's schema. DeDi.global supports a draft-and-publish workflow for better data quality control.
+- `400`
+- `401`
+- `403`
+- `404`
+- `409`
+- `500`
 
-### Save Record as Draft
+## Save Record as Draft
 
-Create a record in draft state for review before publishing.
+Creates a draft record. This endpoint also accepts a `publish` query parameter. In the Postman collection, the documented flow uses `publish=false`.
 
-**Endpoint**: `POST /dedi/{namespace}/{registry_name}/save-record-as-draft`
+**Endpoint**: `POST /dedi/{namespace}/{registry_name}/save-record-as-draft?publish=false`
 
 **Path Parameters**:
-- `namespace` - Namespace ID or verified domain
-- `registry_name` - Target registry name
+
+- `namespace`: namespace identifier
+- `registry_name`: registry name
 
 **Query Parameters**:
-- `publish` - Set to `true` to save and publish immediately (optional)
+
+- `publish`: when set to `true`, create and publish in one call
 
 **Request Body**:
-```typescript
-{
-  record_name: string;     // Unique record name within the registry
-  description: string;     // Record description
-  details: object;        // Record data matching registry schema
-  meta?: object;          // Application-specific metadata
-  valid_till?: string;    // Expiration date in ISO format
-}
-```
 
-**Example Request**:
-```typescript
-const recordData = {
-  record_name: 'john-doe-profile',
-  description: 'Employee profile for John Doe in Engineering',
-  details: {
-    employee_id: 'EMP123456',
-    full_name: 'John Doe',
-    email: 'john.doe@acme.corp',
-    department: 'Engineering',
-    hire_date: '2024-01-15',
-    active: true
+```json
+{
+  "record_name": "my-record",
+  "description": "Sample record description",
+  "details": {
+    "name": "Sample Entity",
+    "description": "Sample entity for registry schema"
   },
-  meta: {
-    created_by: 'hr-system',
-    data_source: 'employee_onboarding_form'
-  },
-  valid_till: '2025-12-31T23:59:59Z'
-};
-
-const response = await fetch(
-  `https://api.dedi.global/dedi/employee-directory/employee-profiles/save-record-as-draft`,
-  {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${your_api_key}`,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(recordData)
-  }
-);
-```
-
-**Response**:
-```typescript
-{
-  message: string;      // Success confirmation message
-  data: {
-    record_name: string; // Name of the created record
-  }
+  "meta": {},
+  "valid_till": "2026-12-31T23:59:59Z"
 }
 ```
 
-### Publish Record
+**Success Response**:
 
-Transition a draft record to live state, making it available for public queries.
+- `201 Created`
+- Includes `message`
+- May include `data.record_name`
 
-**Endpoint**: `POST /dedi/{namespace}/{registry_name}/{record_name}/publish-record`
+**Error Status Codes**:
 
-**Path Parameters**:
-- `namespace` - Namespace ID or verified domain
-- `registry_name` - Registry containing the record
-- `record_name` - Name of the record to publish
+- `400`
+- `401`
+- `403`
+- `404`
+- `409`
+- `500`
 
-**Example Request**:
-```typescript
-const response = await fetch(
-  `https://api.dedi.global/dedi/employee-directory/employee-profiles/john-doe-profile/publish-record`,
-  {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${your_api_key}`,
-      'Content-Type': 'application/json'
-    }
-  }
-);
-```
+## Publish Records
 
-**Response**:
-```typescript
+Publishes one or more draft records by `record_name`.
+
+This replaces the older single-record publish flow documented previously.
+
+**Endpoint**: `POST /dedi/{namespace}/{registry_name}/publish-records`
+
+**Request Body**:
+
+```json
 {
-  message: string;      // Confirmation message
-  data: {
-    record_id: string;  // Published record ID
-  }
+  "records": [
+    "my-record"
+  ]
 }
 ```
 
-**Important Notes**:
-- Records cannot be unpublished, only updation and state changes are possible.
-- Publishing triggers any configured webhooks and notifications
-- Published records are immediately available via lookup and query APIs
+**Success Response**:
 
-## Data Export
+- `200 OK`
+- Includes `message`
 
-Export registry data for analysis, backup, or migration purposes.
+**Error Status Codes**:
 
-### Export Records as CSV
+- `400`
+- `401`
+- `403`
+- `404`
+- `500`
 
-Download all records from a registry in CSV format.
+## Bulk Upload
 
-**Endpoint**: `GET /dedi/{namespace}/{registry_name}/export-as-csv`
-
-**Path Parameters**:
-- `namespace` - Namespace ID or verified domain
-- `registry_name` - Registry to export
-
-**Example Request**:
-```typescript
-const response = await fetch(
-  `https://api.dedi.global/dedi/employee-directory/employee-profiles/export-as-csv`,
-  {
-    headers: {
-      'Authorization': `Bearer ${your_api_key}`
-    }
-  }
-);
-
-// Handle CSV download
-const csvData = await response.text();
-const blob = new Blob([csvData], { type: 'text/csv' });
-```
-
-**Response**:
-- Content-Type: `text/csv`
-- CSV file with all registry records
-
-**CSV Format**:
-- Headers match registry schema fields
-- Nested objects flattened with dot notation
-- Includes record metadata (ID, timestamps, state)
-- One row per record
-
-## Bulk Operations
-
-Handle large-scale data operations efficiently through asynchronous job processing.
-
-### Bulk Upload Records
-
-Upload multiple records via CSV files with asynchronous processing.
+Uploads a CSV file for background draft creation in a live registry.
 
 **Endpoint**: `POST /dedi/bulk-upload`
 
 **Request Format**: `multipart/form-data`
 
 **Form Fields**:
-- `namespace` - Target namespace ID (required)
-- `registry_name` - Target registry name (optional, auto-detected if not provided)
-- `file` - CSV file(s) to upload (required, max 100MB each, up to 1000 files)
 
-**Example Request**:
-```typescript
-const formData = new FormData();
-formData.append('namespace', 'employee-directory');
-formData.append('registry_name', 'employee-profiles');
-formData.append('file', csvFile);
+- `file`: CSV file to upload
+- `namespace`: target namespace
+- `registry_name`: target registry
+- `record_name_field`: optional source column to use for record names
 
-const response = await fetch('https://api.dedi.global/dedi/bulk-upload', {
-  method: 'POST',
-  headers: {
-    'Authorization': `Bearer ${your_api_key}`
-  },
-  body: formData
-});
+**Notes**:
 
-const job = await response.json();
-```
+- The Postman collection explicitly notes that a CSV file must be selected before sending the request
 
-**Response**:
-```typescript
-{
-  status: string;          // Response status ("success")
-  message: string;         // Success confirmation message
-  data: {
-    jobId: string;         // Unique job identifier for status tracking
-    totalFiles: number;    // Number of files submitted
-    statusCheckUrl: string; // URL to check job progress
-  }
-}
-```
+**Success Response**:
 
-### Check Job Status
+- `200 OK`
+- Includes `status`
+- Includes `data.jobId`
 
-Monitor the progress of bulk upload operations.
+**Error Status Codes**:
+
+- `400`
+- `401`
+- `404`
+- `500`
+
+## Job Status
+
+Returns status, counters, and failed-entry references for a bulk upload job.
 
 **Endpoint**: `GET /dedi/bulk-upload/status/{jobId}`
 
 **Path Parameters**:
-- `jobId` - Job ID returned from bulk upload
 
-**Example Request**:
-```typescript
-const response = await fetch(`https://api.dedi.global/dedi/bulk-upload/status/${job_id}`, {
-  headers: {
-    'Authorization': `Bearer ${your_api_key}`
-  }
-});
+- `jobId`: bulk upload job identifier
 
-const status = await response.json();
-```
+**Success Response**:
 
-**Response**:
-```typescript
-{
-  status: string;          // Response status ("success")
-  message: string;         // Success confirmation message  
-  data: {
-    jobId: string;         // Job identifier
-    status: 'pending' | 'processing' | 'completed' | 'failed' | 'cancelled';
-    progress: number;      // Completion percentage (0-100)
-    totalFiles: number;    // Total files in job
-    processedFiles: number; // Files processed successfully
-    failedFiles: number;   // Files that failed processing
-    createdAt: string;     // Job creation timestamp
-    updatedAt: string;     // Last update timestamp
-    error?: string;        // Error message if job failed
-    results: Array<any>;   // Detailed results per file
-    namespace: string;     // Target namespace
-  }
-}
-```
+- `200 OK`
+- Includes `status`
+- Includes `data.jobId`
 
-**Job States**:
-- `pending` - Job queued, waiting to start
-- `processing` - Currently processing files
-- `completed` - All files processed successfully
-- `failed` - Job failed with errors
-- `cancelled` - Job was cancelled
+**Error Status Codes**:
 
-**Polling Recommendation**: Check status every 5-10 seconds during processing.
+- `401`
+- `404`
+- `500`
 
-### Get User Jobs
+## Get User Jobs
 
-Retrieve a list of all bulk upload jobs for the authenticated user.
+Lists bulk upload jobs for the authenticated user.
 
-**Endpoint**: `GET /dedi/bulk-upload/jobs`
+**Endpoint**: `GET /dedi/bulk-upload/jobs?page={page}&limit={limit}`
 
 **Query Parameters**:
-- `page` - Page number (default: 1)
-- `limit` - Jobs per page (default: 10, max: 100)
 
-**Example Request**:
-```typescript
-const response = await fetch('https://api.dedi.global/dedi/bulk-upload/jobs?page=1&limit=20', {
-  headers: {
-    'Authorization': `Bearer ${your_api_key}`
-  }
-});
+- `page`: page number
+- `limit`: page size
 
-const jobsList = await response.json();
-```
+**Success Response**:
 
-**Response**:
-```typescript
-{
-  status: string;          // Response status ("success")
-  message: string;         // Success confirmation message
-  data: {
-    jobs: Array<{
-      jobId: string;       // Job identifier
-      status: string;      // Job status
-      progress: number;    // Completion percentage
-      totalFiles: number;  // Total files in job
-      processedFiles: number; // Files processed successfully
-      failedFiles: number; // Files that failed processing
-      createdAt: string;   // Job creation timestamp
-      updatedAt: string;   // Last update timestamp
-      namespace: string;   // Target namespace
-      error?: string;      // Error message if failed
-    }>;
-    pagination: {
-      page: number;        // Current page number
-      limit: number;       // Items per page
-      total: number;       // Total number of jobs
-      pages: number;       // Total number of pages
-    };
-  }
-}
-```
+- `200 OK`
+- Includes `status`
+- Includes `data.jobs`
 
-## CSV Format Requirements
+**Error Status Codes**:
 
-When using bulk upload, ensure your CSV files follow these guidelines:
+- `401`
+- `500`
 
-**File Format**:
-- Valid UTF-8 encoding
-- First row must contain field names matching registry schema
-- Maximum file size: 100MB
-- Supported extensions: `.csv`
+## Failed Entries
 
-**Data Format**:
-- Nested objects: Use dot notation (e.g., `address.street`, `address.city`)
-- Arrays: Use comma-separated values within quotes
-- Dates: ISO 8601 format recommended
-- Boolean: `true`/`false` or `1`/`0`
+Paginates failed rows for a bulk-upload job owned by the authenticated user.
 
-**Example JSON Schema**:
-```json
-{
-  "type": "object",
-  "properties": {
-    "employee_id": { "type": "string" },
-    "personal_info": {
-      "type": "object",
-      "properties": {
-        "full_name": { "type": "string" },
-        "email": { "type": "string", "format": "email" },
-        "phone": { "type": "string" }
-      }
-    },
-    "employment": {
-      "type": "object", 
-      "properties": {
-        "department": { "type": "string" },
-        "position": { "type": "string" },
-        "hire_date": { "type": "string", "format": "date" }
-      }
-    },
-    "active": { "type": "boolean" },
-    "skills": { 
-      "type": "array", 
-      "items": { "type": "string" }
-    }
-  }
-}
-```
+**Endpoint**: `GET /dedi/bulk-upload/failed-entries/{jobId}?page={page}&limit={limit}`
 
-**Example CSV**:
-```csv
-employee_id,personal_info.full_name,personal_info.email,personal_info.phone,employment.department,employment.position,employment.hire_date,active,skills
-EMP123456,John Doe,john.doe@acme.corp,+1-555-0123,Engineering,Senior Developer,2024-01-15,true,"JavaScript,TypeScript,Node.js"
-EMP123457,Jane Smith,jane.smith@acme.corp,+1-555-0124,Sales,Sales Manager,2024-02-01,true,"CRM,Negotiation,Analytics"
-```
+**Query Parameters**:
 
-## Error Handling
+- `page`: page number
+- `limit`: page size
 
-Common error scenarios and their resolutions:
+**Success Response**:
 
-**Schema Validation Errors**:
-- Ensure record data matches registry schema exactly
-- Check required fields are present
-- Validate data types and formats
+- `200 OK`
+- Includes `status`
+- Includes `data.failedEntries`
 
-**Permission Errors**:
-- Verify you have write access to the namespace/registry
-- Check if you're a delegate with appropriate permissions
+**Error Status Codes**:
 
-**Rate Limiting**:
-- Bulk operations have special rate limits
-- Monitor rate limit headers in responses
-- Implement exponential backoff for retries
+- `401`
+- `404`
+- `500`
 
-**Troubleshooting Tips**:
-- Use draft mode to test record formats before publishing
-- Start with small CSV files for bulk uploads
-- Monitor job status regularly for long-running operations
-- Keep API keys secure and rotate them periodically
+## Download Failed Entries CSV
+
+Downloads failed bulk-upload rows as CSV.
+
+**Endpoint**: `GET /dedi/bulk-upload/failed-entries/{jobId}/download`
+
+**Success Response**:
+
+- `200 OK`
+- `Content-Type: text/csv`
+
+**Error Status Codes**:
+
+- `400`
+- `401`
+- `404`
+- `500`
+
+## Download Sample CSV
+
+Downloads a schema-derived CSV template for a registry.
+
+**Endpoint**: `GET /dedi/{namespace}/{registry_name}/download-sample-csv`
+
+**Success Response**:
+
+- `200 OK`
+- `Content-Type: text/csv`
+
+**Error Status Codes**:
+
+- `400`
+- `401`
+- `403`
+- `404`
+- `500`
+
+## Important Changes Reflected Here
+
+This page has been aligned to the current Postman collection and now reflects the following changes:
+
+- `publish-records` is documented instead of the older single-record `publish-record` endpoint
+- bulk-upload helper endpoints for failed entries are included
+- `download-sample-csv` is included
+- the older `export-as-csv` endpoint is no longer documented in this section because it is not present in the current collection
+
+## Suggested Publish Flow
+
+1. Create a namespace
+2. Create a registry
+3. Save records as drafts
+4. Publish records in batches using `publish-records`
+5. Use bulk upload for CSV-driven ingestion when needed
+6. Monitor failures through job status and failed-entry endpoints

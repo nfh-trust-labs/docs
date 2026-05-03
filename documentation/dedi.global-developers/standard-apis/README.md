@@ -10,30 +10,16 @@ https://api.dedi.global
 
 ## Authentication
 
-Before using any DeDi.global APIs, you need to obtain an API key for authentication. Most APIs require authentication except for public lookup and query operations.
+DeDi.global supports two authentication methods:
 
-### Getting Your API Key
+- API key authentication for production integrations
+- Cookie authentication for browser-based flows
 
-1. **Navigate to the DeDi.global Platform**\
-   Go to [https://publish.dedi.global](https://publish.dedi.global)
-2. **Register or Login**
-   * **First-time users**: Click "Register" and provide:
-     * Name
-     * Email address
-     * Password (minimum 6 characters with special characters)
-   * **Existing users**: Click "Login" with your credentials
-3. **Email Verification**\
-   Check your email for a magic link and click it to verify your account (Multi-Factor Authentication)
-4. **Generate API Key**
-   * Once logged in, click the profile button in the top-right corner
-   * Select "Get API Key"
-   * Copy the generated API key for use in your applications
-
-> **Note**: You can attach screenshots of the registration flow, login interface, and API key generation process to help users navigate the platform more easily. Place images in an `assets/` folder and reference them using relative paths.
+Most write APIs require authentication. For the current authentication endpoints and flows, refer to [Authentication APIs](./authentication.md).
 
 ### Using Your API Key
 
-Include your API key in all authenticated requests as a Bearer token in the Authorization header:
+Include your API key in authenticated requests as a bearer token:
 
 ```typescript
 const response = await fetch('https://api.dedi.global/endpoint', {
@@ -52,17 +38,26 @@ const response = await fetch('https://api.dedi.global/endpoint', {
 
 ## API Sections Overview
 
-### [Publish APIs](documentation/dedi.global-developers/standard-apis/publish.md)
+### [Authentication APIs](./authentication.md)
+
+Manage registration, login, email verification, API key generation, session inspection, token refresh, logout, and password reset flows.
+
+* **Register/Login Flow**: Start account creation or sign-in with magic-link verification
+* **Session Management**: Verify email, inspect the current user, refresh credentials, and logout
+* **API Key Issuance**: Generate bearer tokens for server-side integrations
+* **Password Recovery**: Reset passwords through authenticated and magic-link flows
+
+### [Publish APIs](./publish.md)
 
 Create and manage the core components of your data infrastructure on DeDi.global.
 
 * **Namespace Management**: Create isolated environments to organize your data
 * **Registry Creation**: Define structured schemas for data collection
-* **Record Management**: Store, draft, and publish individual data records
+* **Record Management**: Store draft records and publish them in batches
 * **Bulk Operations**: Handle large-scale data uploads via CSV files
-* **Data Export**: Extract registry data for analysis and backup
+* **CSV Tooling**: Download schema-derived sample CSVs and failed-entry reports
 
-### [Access APIs](documentation/dedi.global-developers/standard-apis/access.md)
+### [Access APIs](./access.md)
 
 Query and retrieve data from the DeDi.global network with powerful search capabilities.
 
@@ -71,7 +66,7 @@ Query and retrieve data from the DeDi.global network with powerful search capabi
 * **Version History**: Access historical data and track changes over time
 * **Schema Discovery**: Find registries by standardized schema tags
 
-### [Domain Verification](documentation/dedi.global-developers/standard-apis/domain.md)
+### [Domain Verification](./domain.md)
 
 Establish domain ownership to build trust and enhance namespace credibility.
 
@@ -80,7 +75,7 @@ Establish domain ownership to build trust and enhance namespace credibility.
 * **Trust Enhancement**: Increase user confidence through verified domain status
 * **Verification Monitoring**: Track and confirm verification progress
 
-### [Delegation Management](documentation/dedi.global-developers/standard-apis/delegation.md)
+### [Delegation Management](./delegation.md)
 
 Enable collaborative access and team-based workflows through controlled permission sharing.
 
@@ -89,7 +84,7 @@ Enable collaborative access and team-based workflows through controlled permissi
 * **Access Control**: Manage team permissions with principle of least privilege
 * **Organizational Workflows**: Support complex organizational structures and project-based access patterns
 
-### [Update Management](documentation/dedi.global-developers/standard-apis/update.md)
+### [Update Management](./update.md)
 
 Modify existing data while maintaining integrity and audit trails.
 
@@ -97,7 +92,7 @@ Modify existing data while maintaining integrity and audit trails.
 * **Registry Modifications**: Update description and metadata
 * **Namespace Changes**: Modify namespace properties and settings
 
-### [State Management](documentation/dedi.global-developers/standard-apis/state-management.md)
+### [State Management](./state-management.md)
 
 Control the lifecycle and availability of your data.
 
@@ -105,7 +100,7 @@ Control the lifecycle and availability of your data.
 * **Archival Operations**: Archive outdated or obsolete data
 * **Status Tracking**: Monitor the current state of all entities
 
-### [Advanced Search](documentation/dedi.global-developers/standard-apis/advanced-search.md)
+### [Advanced Search](./advanced-search.md)
 
 Powerful search capabilities across the entire namespaces.
 
@@ -113,7 +108,7 @@ Powerful search capabilities across the entire namespaces.
 * **Filtering Options**: Apply complex filters to narrow results
 * **Aggregation Queries**: Perform analytical operations on data sets
 
-### [Subscription](documentation/dedi.global-developers/standard-apis/subscription.md)
+### [Subscription](./subscription.md)
 
 Stay informed about changes to data you care about.
 
@@ -121,7 +116,7 @@ Stay informed about changes to data you care about.
 * **Event Filtering**: Subscribe to specific types of updates
 * **Subscription Management**: Control your notification preferences
 
-### [Lookup Verification](documentation/dedi.global-developers/standard-apis/lookup-verification.md)
+### [Lookup Verification](./lookup-verification.md)
 
 Advanced verification and data integrity operations.
 
@@ -158,6 +153,6 @@ Common HTTP status codes:
 ## Getting Started
 
 1. [Obtain your API key](./#authentication) from the DeDi.global platform
-2. Start with [Publish APIs](documentation/dedi.global-developers/standard-apis/publish.md) to create your first namespace and registry
-3. Use [Access APIs](documentation/dedi.global-developers/standard-apis/access.md) to query and retrieve your data
-4. Explore [advanced features](documentation/dedi.global-developers/standard-apis/domain.md) like domain verification and webhooks
+2. Review the [Authentication APIs](./authentication.md) flow and generate credentials
+3. Start with [Publish APIs](./publish.md) to create your first namespace and registry
+4. Use [Access APIs](./access.md) to query and retrieve your data
