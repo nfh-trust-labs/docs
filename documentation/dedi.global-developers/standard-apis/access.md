@@ -1,8 +1,8 @@
 # Access APIs
 
-The Access APIs provide comprehensive data retrieval capabilities for the DeDi.global platform. These read-only endpoints allow you to lookup, query, and explore namespaces, registries, and records with powerful filtering and version management features.
+The Access APIs provide comprehensive data retrieval capabilities for the DeDi.global platform. These read-oriented endpoints allow you to look up, query, and explore namespaces, registries, and records with filtering and version management support.
 
-🔒 **Authentication Required**: All Access APIs require authentication using your API key in the Authorization header as a Bearer token.
+🌐 **Public Read Access**: Lookup, query, version, and search endpoints are available without mandatory authentication. You may still send an API key when your integration standardizes authenticated requests.
 
 ## Overview
 
@@ -12,7 +12,7 @@ Access APIs are organized into three main categories:
 - **Query APIs** - Search and filter collections of resources with pagination
 - **Version APIs** - Manage and retrieve historical versions of resources
 
-All access APIs require authentication and support both current and historical data queries.
+These access APIs support both current and historical data queries.
 
 ## Lookup APIs
 
@@ -238,18 +238,6 @@ const data = await response.json();
 }
 ```
 
-**Expired Record Response (200):**
-```typescript
-{
-  "message": "Record has been expired",
-  "data": {
-    // Same structure as above but with state: "expired"
-  }
-}
-```
-
-> **Important**: A `200` response indicates successful data retrieval, not that the record is active. Always check the `state` field to verify the record's current status before using it.
-
 **Error Responses:**
 - `400` - Missing required parameters
 - `404` - Namespace, registry, or record not found
@@ -269,9 +257,9 @@ List all registries within a namespace with filtering options.
 - `namespace` (path, required): Namespace ID or domain
 - `from` (query, optional): Filter from date (YYYY-MM-DD)
 - `to` (query, optional): Filter to date (YYYY-MM-DD)
-- `status` (query, optional): Filter by status (`revoked`, `suspended`)
+- `status` (query, optional): Filter by status (`active`, `inactive`)
 - `name` (query, optional): Search by registry name (minimum 3 characters)
-- `sort` (query, optional): Sort by `date`, `status`, `name`
+- `sort` (query, optional): Sort by `date`, `status`, `name`, or `id`
 - `page` (query, optional): Page number for pagination
 - `page_size` (query, optional): Items per page
 - `as_on` (query, optional): Historical query date (YYYY-MM-DD)
@@ -351,9 +339,9 @@ List all records within a registry with filtering options.
 - `registry_name` (path, required): Registry name
 - `from` (query, optional): Filter from date (YYYY-MM-DD)
 - `to` (query, optional): Filter to date (YYYY-MM-DD)
-- `state` (query, optional): Filter by state (`revoked`, `suspended`, `expired`)
+- `state` (query, optional): Filter by state (`live`)
 - `name` (query, optional): Search by record name (minimum 3 characters)
-- `sort` (query, optional): Sort by `date`, `state`, `name`
+- `sort` (query, optional): Sort by `date`, `status`, `name`, or `id`
 - `page` (query, optional): Page number for pagination
 - `page_size` (query, optional): Items per page
 - `as_on` (query, optional): Historical query date (YYYY-MM-DD)
@@ -433,7 +421,7 @@ const data = await response.json();
 
 ### Query Registries by Schema Tag
 
-Find registries by their schema tag across the platform.
+Find verified registries by their schema tag across the platform.
 
 **Endpoint:** `GET /dedi/{tag}/get-registry-by-tag`
 
@@ -442,14 +430,12 @@ Find registries by their schema tag across the platform.
 
 > **Note:** The tag cannot be `custom` as this endpoint is specifically for standardized schemas.
 
+**Authentication:** Not required
+
 **Example Request:**
 ```typescript
 const response = await fetch('https://api.dedi.global/dedi/membership/get-registry-by-tag', {
-  method: 'GET',
-  headers: {
-    'Authorization': 'Bearer YOUR_API_KEY',
-    'Content-Type': 'application/json'
-  }
+  method: 'GET'
 });
 
 const data = await response.json();
@@ -459,38 +445,42 @@ const data = await response.json();
 ```typescript
 {
   "message": "Resource retrieved successfully",
-  "data": [
-    {
-      "registry_id": "did:cord:3zAbcDef...",
-      "registry_name": "employee-registry",
-      "namespace_id": "did:cord:3yVazTQMc...",
-      "description": "Employee membership registry",
-      "digest": "0x456def...",
-      "tag": "membership",
-      "schema": {
-        "type": "object",
-        "properties": {
-          "email": { "type": "string", "format": "email" },
-          "role": { "type": "string" },
-          "department": { "type": "string" }
-        }
-      },
-      "genesis": "2024-01-01T00:00:00.000Z",
-      "created_at": "2024-01-01T00:00:00Z",
-      "updated_at": "2024-01-01T00:00:00Z",
-      "created_by": "did:cord:3xMxFkzY...",
-      "state": "live",
-      "meta": {
-        "category": "membership",
-        "version": "v2.0"
-      },
-      "record_count": 50,
-      "version_count": 3,
-      "version": "0x789abc...",
-      "query_allowed": true,
-      "ttl": 86400
-    }
-  ]
+  "data": {
+    "tag": "membership",
+    "total_registries": 1,
+    "registries": [
+      {
+        "registry_id": "did:cord:3zAbcDef...",
+        "registry_name": "employee-registry",
+        "namespace_id": "did:cord:3yVazTQMc...",
+        "description": "Employee membership registry",
+        "digest": "0x456def...",
+        "tag": "membership",
+        "schema": {
+          "type": "object",
+          "properties": {
+            "email": { "type": "string", "format": "email" },
+            "role": { "type": "string" },
+            "department": { "type": "string" }
+          }
+        },
+        "genesis": "2024-01-01T00:00:00.000Z",
+        "created_at": "2024-01-01T00:00:00Z",
+        "updated_at": "2024-01-01T00:00:00Z",
+        "created_by": "did:cord:3xMxFkzY...",
+        "state": "live",
+        "meta": {
+          "category": "membership",
+          "version": "v2.0"
+        },
+        "record_count": 50,
+        "version_count": 3,
+        "version": "0x789abc...",
+        "query_allowed": true,
+        "ttl": 86400
+      }
+    ]
+  }
 }
 ```
 

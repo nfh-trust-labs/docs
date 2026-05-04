@@ -101,9 +101,9 @@ Modify existing data while maintaining integrity and audit trails.
 
 Control the lifecycle and availability of your data.
 
-* **Publication Control**: Manage record visibility and accessibility
-* **Archival Operations**: Archive outdated or obsolete data
-* **Status Tracking**: Monitor the current state of all entities
+* **State Control**: Manage namespace, registry, and record lifecycle
+* **Recovery Operations**: Delete and restore namespaces, registries, and records
+* **Retention Window**: Restore deleted entities before permanent archival
 
 ### [Advanced Search](documentation/dedi.global-developers/standard-apis/advanced-search.md)
 

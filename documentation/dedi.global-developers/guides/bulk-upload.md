@@ -50,7 +50,7 @@ key-003,Ed25519,MCowBQYDK2VwAyEA...,authentication,2025-06-01T00:00:00Z
 memberId,name,role,status,joinedDate
 M001,Acme Corp,full_member,active,2024-01-15
 M002,Beta Industries,associate,active,2024-03-20
-M003,Gamma Ltd,full_member,suspended,2024-06-01
+M003,Gamma Ltd,full_member,inactive,2024-06-01
 ```
 
 #### Requirements

@@ -37,13 +37,14 @@ The verified domain makes the URL human-readable and helps establish clear prove
 
 1. **Domain Whitelisting**
    * Submit a request [here](https://docs.google.com/forms/d/e/1FAIpQLScAwEZh94DCIw70zrxWUJ1cud_wYfo_WEjqDpEmbxaw5ZF9aw/viewform?usp=dialog) to whitelist your domain
-2.  **Generate DNS Record**
+2.  **Generate a Verification Record**
 
-    * Use our API/UI to generate a DNS TXT record
+    * Use our API/UI to generate the verification value
 
     ```http
-     GET dedi/generate-dns-txt/{{namespace_id}}/{{domain}}
+     GET dedi/generate-dns-txt/{{namespace_id}}/{{domain}}?verification_method=self_dns
     ```
+    * Supported verification methods are `self_dns`, `self_http`, and `request_other_namespace`
 3. **DNS Configuration**
    * Add the provided TXT record to your domain's DNS settings
    * Wait for DNS propagation (can take anywhere from 15 min to 48 hours)
@@ -64,6 +65,16 @@ The verified domain makes the URL human-readable and helps establish clear prove
       "namespace_id": "string"
     }
     ```
+
+    Verification checks DNS TXT first and falls back to `https://<domain>/.well-known/dedi-verification.txt` for HTTP-based verification.
+
+5. **Re-verification lifecycle**
+   * Verified domains are re-checked on a scheduled basis
+   * The current implementation re-verifies active sources after a configurable interval with a default of `1` year
+   * Failed sources enter a configurable grace period with a default of `7` days before the source is removed
+
+6. **Delegated verification decisions**
+   * Target namespace delegates use the verification-request and notification APIs to accept or reject delegated verification requests
 
 ### What's Next?
 

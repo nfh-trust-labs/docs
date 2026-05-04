@@ -64,8 +64,9 @@ const namespace = await response.json();
 ```
 
 **Error Scenarios**:
-- `400` - Invalid request body or namespace name already exists
+- `400` - Invalid request body
 - `401` - Missing or invalid API key
+- `409` - Namespace name already exists
 - `429` - Rate limit exceeded
 
 **Use Cases**:
@@ -91,11 +92,13 @@ Define a new registry within a namespace to store structured records.
 {
   registry_name: string;  // Unique registry name within the namespace
   description: string;    // Description of what this registry stores
-  schema?: object;       // JSON Schema defining record structure (required only for custom tag)
-  tag: 'custom' | 'membership' | 'public_key' | 'revoke' | 'beckn_subscriber' | 'beckn_subscriber_reference'; // Schema classification
-  meta?: object;         // Optional metadata
+  schema?: object;        // Custom JSON Schema defining record structure
+  tag?: 'membership' | 'public_key' | 'revoke' | 'beckn_subscriber' | 'beckn_subscriber_reference'; // Pre-built schema tag
+  meta?: object;          // Optional metadata
 }
 ```
+
+Provide either `schema` or `tag`. Do not send both in the same request.
 
 **Example Request**:
 ```typescript
@@ -114,7 +117,6 @@ const registryData = {
     },
     required: ['employee_id', 'full_name', 'email', 'department']
   },
-  tag: 'custom',
   meta: { 
     version: '1.0',
     data_classification: 'internal' 
@@ -149,14 +151,15 @@ DeDi.global currently provides 5 pre-built schemas out of the box:
 - `beckn_subscriber` - Beckn protocol subscriber information
 - `beckn_subscriber_reference` - Beckn protocol subscriber reference data
 
-**Note**: When using any of the pre-built schema tags (membership, public_key, revoke, beckn_subscriber, beckn_subscriber_reference), the `schema` field is optional as DeDi.global will use the predefined schema. For custom schemas, set `tag: 'custom'` and provide your own `schema` object.
+**Note**: When using any of the pre-built schema tags (`membership`, `public_key`, `revoke`, `beckn_subscriber`, `beckn_subscriber_reference`), provide `tag` and omit `schema`. For custom registries, provide `schema` and omit `tag`.
 
 *For detailed information about these pre-built schemas, please reach out to our support team.*
 
 **Error Scenarios**:
-- `400` - Invalid schema format or registry name already exists
-- `404` - Namespace not found or access denied
+- `400` - Invalid schema format or invalid `schema`/`tag` combination
+- `404` - Namespace not found
 - `403` - Insufficient permissions for the namespace
+- `409` - Registry name already exists in the namespace
 
 ## Time to Live (TTL) Management
 
@@ -263,34 +266,54 @@ const response = await fetch(
 **Response**:
 ```typescript
 {
-  message: string;      // Success confirmation message
+  message: "record saved as draft";
   data: {
-    record_name: string; // Name of the created record
+    record_name: string;
   }
 }
 ```
 
-### Publish Record
+When `publish=true`, the response is:
 
-Transition a draft record to live state, making it available for public queries.
+```typescript
+{
+  message: "record created";
+  data: {
+    record_id: string;
+  }
+}
+```
 
-**Endpoint**: `POST /dedi/{namespace}/{registry_name}/{record_name}/publish-record`
+### Publish Records
+
+Queue one or more draft records for publishing so they transition to live state and become queryable.
+
+**Endpoint**: `POST /dedi/{namespace}/{registry_name}/publish-records`
 
 **Path Parameters**:
 - `namespace` - Namespace ID or verified domain
-- `registry_name` - Registry containing the record
-- `record_name` - Name of the record to publish
+- `registry_name` - Registry containing the draft records
+
+**Request Body**:
+```typescript
+{
+  records: string[]; // One or more draft record names
+}
+```
 
 **Example Request**:
 ```typescript
 const response = await fetch(
-  `https://api.dedi.global/dedi/employee-directory/employee-profiles/john-doe-profile/publish-record`,
+  `https://api.dedi.global/dedi/employee-directory/employee-profiles/publish-records`,
   {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${your_api_key}`,
       'Content-Type': 'application/json'
-    }
+    },
+    body: JSON.stringify({
+      records: ['john-doe-profile', 'jane-doe-profile']
+    })
   }
 );
 ```
@@ -298,17 +321,19 @@ const response = await fetch(
 **Response**:
 ```typescript
 {
-  message: string;      // Confirmation message
+  message: string; // "Records are in publish queue"
   data: {
-    record_id: string;  // Published record ID
+    count: number;
+    record_ids: string[];
   }
 }
 ```
 
 **Important Notes**:
-- Records cannot be unpublished, only updation and state changes are possible.
-- Publishing triggers any configured webhooks and notifications
-- Published records are immediately available via lookup and query APIs
+- Every listed record must already exist in `draft` state.
+- The target registry must be in `live` state.
+- Publishing is queued and returns the generated record IDs for the submitted draft records.
+- Published records are then available through lookup and query APIs.
 
 ## Data Export
 
@@ -363,9 +388,10 @@ Upload multiple records via CSV files with asynchronous processing.
 **Request Format**: `multipart/form-data`
 
 **Form Fields**:
-- `namespace` - Target namespace ID (required)
-- `registry_name` - Target registry name (optional, auto-detected if not provided)
-- `file` - CSV file(s) to upload (required, max 100MB each, up to 1000 files)
+- `namespace` - Target namespace ID or verified domain (required)
+- `registry_name` - Target registry name (required)
+- `record_name_field` - CSV column to use as `record_name` (optional)
+- `file` - Single CSV file upload (required, max 100MB)
 
 **Example Request**:
 ```typescript
@@ -388,12 +414,12 @@ const job = await response.json();
 **Response**:
 ```typescript
 {
-  status: string;          // Response status ("success")
+  status: string;          // "success"
+  total_rows: number;      // Parsed CSV row count reported in the response
   message: string;         // Success confirmation message
   data: {
     jobId: string;         // Unique job identifier for status tracking
-    totalFiles: number;    // Number of files submitted
-    statusCheckUrl: string; // URL to check job progress
+    statusCheckUrl: string; // Relative URL to check job progress
   }
 }
 ```
@@ -421,30 +447,31 @@ const status = await response.json();
 **Response**:
 ```typescript
 {
-  status: string;          // Response status ("success")
-  message: string;         // Success confirmation message  
+  status: string;          // "success"
+  message: string;         // Success confirmation message
   data: {
     jobId: string;         // Job identifier
-    status: 'pending' | 'processing' | 'completed' | 'failed' | 'cancelled';
-    progress: number;      // Completion percentage (0-100)
-    totalFiles: number;    // Total files in job
-    processedFiles: number; // Files processed successfully
-    failedFiles: number;   // Files that failed processing
     createdAt: string;     // Job creation timestamp
     updatedAt: string;     // Last update timestamp
-    error?: string;        // Error message if job failed
-    results: Array<any>;   // Detailed results per file
+    status: 'pending' | 'processing' | 'completed' | 'failed';
     namespace: string;     // Target namespace
+    registryName: string;  // Target registry
+    totalEntries: number;  // Rows discovered in the CSV
+    validEntries: number;  // Successfully processed rows
+    failedEntries: number; // Failed rows
+    error?: string;        // Error message if job failed
+    result?: object;       // Final processing summary if available
+    failedEntriesUrl?: string | null;
+    downloadFailedEntriesCsvUrl?: string | null;
   }
 }
 ```
 
 **Job States**:
 - `pending` - Job queued, waiting to start
-- `processing` - Currently processing files
-- `completed` - All files processed successfully
+- `processing` - Currently processing rows
+- `completed` - Processing finished
 - `failed` - Job failed with errors
-- `cancelled` - Job was cancelled
 
 **Polling Recommendation**: Check status every 5-10 seconds during processing.
 
@@ -472,16 +499,12 @@ const jobsList = await response.json();
 **Response**:
 ```typescript
 {
-  status: string;          // Response status ("success")
+  status: string;          // "success"
   message: string;         // Success confirmation message
   data: {
     jobs: Array<{
       jobId: string;       // Job identifier
       status: string;      // Job status
-      progress: number;    // Completion percentage
-      totalFiles: number;  // Total files in job
-      processedFiles: number; // Files processed successfully
-      failedFiles: number; // Files that failed processing
       createdAt: string;   // Job creation timestamp
       updatedAt: string;   // Last update timestamp
       namespace: string;   // Target namespace
@@ -497,6 +520,34 @@ const jobsList = await response.json();
 }
 ```
 
+### Download Registry CSV Template
+
+Download a schema-derived CSV template for a registry.
+
+**Endpoint**: `GET /dedi/{namespace}/{registry_name}/download-sample-csv`
+
+**Path Parameters**:
+- `namespace` - Namespace ID or verified domain
+- `registry_name` - Registry name
+
+**Example Request**:
+
+```bash
+curl -L \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  "https://api.dedi.global/dedi/employee-directory/employee-profiles/download-sample-csv" \
+  -o employee-profiles_template.csv
+```
+
+**Success Response (200):**
+- Content type: `text/csv`
+- Content disposition: `attachment; filename={registry_name}_template.csv`
+
+**Error Scenarios**:
+- `400` - Registry schema not found or schema has no exportable fields
+- `404` - Namespace not found or registry not found
+- `500` - Failed to export CSV template
+
 ## CSV Format Requirements
 
 When using bulk upload, ensure your CSV files follow these guidelines:
@@ -506,6 +557,7 @@ When using bulk upload, ensure your CSV files follow these guidelines:
 - First row must contain field names matching registry schema
 - Maximum file size: 100MB
 - Supported extensions: `.csv`
+- Upload exactly one CSV file per request
 
 **Data Format**:
 - Nested objects: Use dot notation (e.g., `address.street`, `address.city`)

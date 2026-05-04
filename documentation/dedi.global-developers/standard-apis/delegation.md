@@ -217,6 +217,45 @@ const data = await response.json();
 - Verify delegate assignments for compliance
 - Monitor access control changes
 
+### Transfer Namespace Ownership
+
+Transfer namespace ownership to another registered user.
+
+**Endpoint:** `POST /dedi/{namespace}/transfer-ownership`
+
+**Parameters:**
+- `namespace` (path, required): Namespace ID or verified domain
+
+**Request Body:**
+```typescript
+{
+  email: string; // Email address of the new owner
+}
+```
+
+**Success Response (200):**
+```json
+{
+  "message": "Namespace transferred successfully",
+  "new_owner": {
+    "email": "owner@example.com",
+    "profile_id": "did:cord:profile:..."
+  }
+}
+```
+
+**Error Responses:**
+- `400` - Namespace missing, email missing, or token/user lookup failed
+- `403` - Insufficient privileges to transfer ownership
+- `404` - Namespace not found or target user not found
+- `500` - Internal server error
+
+**Important Notes:**
+- The target user must already have a registered DeDi.global account.
+- The target user email cannot match the current owner email.
+- The transfer replaces the namespace authorization set with the new owner.
+- Registry ownership transfer jobs are queued for the namespace's active registries.
+
 ## Registry Delegation APIs
 
 Registry delegation grants specific access to individual registries, allowing focused collaboration without broad namespace control.
