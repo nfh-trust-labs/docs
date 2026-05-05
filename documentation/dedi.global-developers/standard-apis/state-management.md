@@ -1,514 +1,330 @@
 # State Management APIs
 
-DeDi.global provides comprehensive state management capabilities for both registries and records, allowing you to control the lifecycle and availability of your data through well-defined state transitions. All state changes are versioned and tracked on the blockchain, ensuring complete auditability.
+DeDi.global manages resource lifecycle through explicit namespace, registry, and record states, plus dedicated deletion and recovery APIs.
 
-**Authentication**: 🔒 All State Management APIs require authentication via API key.
+## State Model
 
-## Registry State Management
+| Entity | Supported states | Notes |
+| --- | --- | --- |
+| Namespace | `live` | A namespace remains `live` until it is deleted. |
+| Registry | `live`, `inactive` | Inactive registries remain versioned and restorable. |
+| Record | `draft`, `live` | Draft records are private working versions. Published records are `live`. |
 
-### Suspend Registry
+## Transition Rules
 
-Temporarily suspends a registry, making it unavailable for queries and record operations while preserving all data. You can still lookup the registry. This is a **reversible** operation that can be undone using the reinstate endpoint.
+### Namespace
 
-**Endpoint:** `POST /dedi/{namespace}/{registry_name}/suspend-registry`
+- New namespaces are created in the `live` state.
+- A namespace does not transition to another active state.
+- Namespace removal is handled through the deletion and restore APIs.
 
-**Parameters:**
-- `namespace` (path, required): Namespace ID or verified domain
-- `registry_name` (path, required): Registry name to suspend
+### Registry
 
-**Request Body:**
-No request body required.
+- New registries are created in the `live` state.
+- `POST /dedi/{namespace}/{registry_name}/inactivate-registry` creates a new registry version in the `inactive` state.
+- `POST /dedi/{namespace}/{registry_name}/reactivate-registry` creates a new registry version in the `live` state.
 
-**Example Request:**
-```typescript
-const response = await fetch('https://api.dedi.global/dedi/acme-corp/products/suspend-registry', {
-  method: 'POST',
-  headers: {
-    'Authorization': 'Bearer YOUR_API_KEY',
-    'Content-Type': 'application/json'
-  }
-});
+### Record
 
-const data = await response.json();
-```
+- `POST /dedi/{namespace}/{registry_name}/save-record-as-draft` creates a draft record.
+- `POST /dedi/{namespace}/{registry_name}/publish-records` publishes draft records to the `live` state.
+- Updating a draft record edits the draft version.
+- Updating a live record creates a new live version.
+
+## Registry Activation APIs
+
+### Inactivate Registry
+
+**Endpoint:** `POST /dedi/{namespace}/{registry_name}/inactivate-registry`
+
+**Request Body:** None
 
 **Success Response (200):**
-```typescript
+
+```json
 {
-  "message": "Registry has been suspended"
+  "message": "Registry has been inactivated"
 }
 ```
 
-**Error Responses:**
-- `400` - Invalid input parameters
-- `403` - Insufficient privileges to perform this action
-- `404` - Namespace or registry not found
-- `500` - Internal server error
+### Reactivate Registry
 
-**State Transition Rules:**
-- ✅ `LIVE` → `SUSPENDED` (Allowed)
-- ❌ `SUSPENDED` → `SUSPENDED` (Registry already suspended)
-- ❌ `REVOKED` → `SUSPENDED` (Revoked registries cannot be suspended)
-- ❌ `EXPIRED` → `SUSPENDED` (Expired registries cannot be suspended)
+**Endpoint:** `POST /dedi/{namespace}/{registry_name}/reactivate-registry`
 
-### Reinstate Registry
-
-Reactivates a suspended registry, restoring it to live status and making it available for all operations.
-
-**Endpoint:** `POST /dedi/{namespace}/{registry_name}/reinstate-registry`
-
-**Parameters:**
-- `namespace` (path, required): Namespace ID or verified domain
-- `registry_name` (path, required): Registry name to reinstate
-
-**Request Body:**
-No request body required.
-
-**Example Request:**
-```typescript
-const response = await fetch('https://api.dedi.global/dedi/acme-corp/products/reinstate-registry', {
-  method: 'POST',
-  headers: {
-    'Authorization': 'Bearer YOUR_API_KEY',
-    'Content-Type': 'application/json'
-  }
-});
-
-const data = await response.json();
-```
+**Request Body:** None
 
 **Success Response (200):**
-```typescript
+
+```json
 {
-  "message": "Registry has been reinstated"
+  "message": "Registry has been reactivated"
 }
 ```
 
-**Error Responses:**
-- `400` - Invalid input parameters
-- `403` - Insufficient privileges to perform this action
-- `404` - Namespace or registry not found
-- `500` - Internal server error
+## Deletion APIs
 
-**State Transition Rules:**
-- ✅ `SUSPENDED` → `LIVE` (Allowed)
-- ❌ `LIVE` → `LIVE` (Registry already active)
-- ❌ `REVOKED` → `LIVE` (Revoked registries cannot be reinstated)
-- ❌ `EXPIRED` → `LIVE` (Expired registries cannot be reinstated)
+Deletion removes the active entity from lookup, query, version, and publish flows and places the deleted data into the recovery surface for a limited restore window.
 
-### Revoke Registry
+### Delete Namespace
 
-Permanently revokes a registry, making it completely unavailable for all operations. You can still lookup the registry. This is an **irreversible** operation that cannot be undone.
-
-**Endpoint:** `POST /dedi/{namespace}/{registry_name}/revoke-registry`
-
-**Parameters:**
-- `namespace` (path, required): Namespace ID or verified domain
-- `registry_name` (path, required): Registry name to revoke
+**Endpoint:** `DELETE /dedi/{namespace}/delete-namespace`
 
 **Request Body:**
-No request body required.
 
-**Example Request:**
-```typescript
-const response = await fetch('https://api.dedi.global/dedi/acme-corp/products/revoke-registry', {
-  method: 'POST',
-  headers: {
-    'Authorization': 'Bearer YOUR_API_KEY',
-    'Content-Type': 'application/json'
-  }
-});
-
-const data = await response.json();
-```
-
-**Success Response (200):**
-```typescript
+```json
 {
-  "message": "Registry has been revoked"
+  "reason": "Optional deletion reason"
 }
 ```
 
-**Error Responses:**
-- `400` - Invalid input parameters
-- `403` - Insufficient privileges to perform this action
-- `404` - Namespace or registry not found
-- `500` - Internal server error
-
-**State Transition Rules:**
-- ✅ `LIVE` → `REVOKED` (Allowed)
-- ❌ `SUSPENDED` → `REVOKED` (Suspended registries cannot be revoked)
-- ❌ `REVOKED` → `REVOKED` (Registry already revoked)
-- ❌ `EXPIRED` → `REVOKED` (Expired registries cannot be revoked)
-
-## Record State Management
-
-### Suspend Record
-
-Temporarily suspends a record, making it unavailable for queries while preserving all data. You can still lookup the record. This is a **reversible** operation.
-
-**Endpoint:** `POST /dedi/{namespace}/{registry_name}/{record_name}/suspend-record`
-
-**Parameters:**
-- `namespace` (path, required): Namespace ID or verified domain
-- `registry_name` (path, required): Registry name containing the record
-- `record_name` (path, required): Record name to suspend
-
-**Request Body:**
-No request body required.
-
-**Prerequisites:**
-- Registry must be in `LIVE` state
-
-**Example Request:**
-```typescript
-const response = await fetch('https://api.dedi.global/dedi/acme-corp/products/laptop-001/suspend-record', {
-  method: 'POST',
-  headers: {
-    'Authorization': 'Bearer YOUR_API_KEY',
-    'Content-Type': 'application/json'
-  }
-});
-
-const data = await response.json();
-```
-
 **Success Response (200):**
-```typescript
+
+```json
 {
-  "message": "Record has been suspended"
-}
-```
-
-**Error Responses:**
-- `400` - Invalid input parameters
-- `403` - Insufficient privileges to perform this action
-- `404` - Namespace, registry, or record not found
-- `500` - Internal server error
-
-**State Transition Rules:**
-- ✅ `LIVE` → `SUSPENDED` (Allowed)
-- ✅ `DRAFT` → `SUSPENDED` (Allowed)
-- ❌ `SUSPENDED` → `SUSPENDED` (Record already suspended)
-- ❌ `REVOKED` → `SUSPENDED` (Revoked records cannot be suspended)
-- ❌ `EXPIRED` → `SUSPENDED` (Expired records cannot be suspended)
-
-### Reinstate Record
-
-Reactivates a suspended record, restoring it to live status and making it available for queries. You can still lookup the record.
-
-**Endpoint:** `POST /dedi/{namespace}/{registry_name}/{record_name}/reinstate-record`
-
-**Parameters:**
-- `namespace` (path, required): Namespace ID or verified domain
-- `registry_name` (path, required): Registry name containing the record
-- `record_name` (path, required): Record name to reinstate
-
-**Request Body:**
-No request body required.
-
-**Example Request:**
-```typescript
-const response = await fetch('https://api.dedi.global/dedi/acme-corp/products/laptop-001/reinstate-record', {
-  method: 'POST',
-  headers: {
-    'Authorization': 'Bearer YOUR_API_KEY',
-    'Content-Type': 'application/json'
-  }
-});
-
-const data = await response.json();
-```
-
-**Success Response (200):**
-```typescript
-{
-  "message": "Record has been reinstated"
-}
-```
-
-**Error Responses:**
-- `400` - Invalid input parameters
-- `403` - Insufficient privileges to perform this action
-- `404` - Namespace, registry, or record not found
-- `500` - Internal server error
-
-**State Transition Rules:**
-- ✅ `SUSPENDED` → `LIVE` (Allowed)
-- ❌ `LIVE` → `LIVE` (Record already active)
-- ❌ `DRAFT` → `LIVE` (Use publish endpoint instead)
-- ❌ `REVOKED` → `LIVE` (Revoked records cannot be reinstated)
-- ❌ `EXPIRED` → `LIVE` (Expired records cannot be reinstated)
-
-### Revoke Record
-
-Permanently revokes a record, making it completely unavailable for all operations. You can still lookup the record. This is an **irreversible** operation.
-
-**Endpoint:** `POST /dedi/{namespace}/{registry_name}/{record_name}/revoke-record`
-
-**Parameters:**
-- `namespace` (path, required): Namespace ID or verified domain
-- `registry_name` (path, required): Registry name containing the record
-- `record_name` (path, required): Record name to revoke
-
-**Request Body:**
-No request body required.
-
-**Example Request:**
-```typescript
-const response = await fetch('https://api.dedi.global/dedi/acme-corp/products/laptop-001/revoke-record', {
-  method: 'POST',
-  headers: {
-    'Authorization': 'Bearer YOUR_API_KEY',
-    'Content-Type': 'application/json'
-  }
-});
-
-const data = await response.json();
-```
-
-**Success Response (200):**
-```typescript
-{
-  "message": "Record has been revoked"
-}
-```
-
-**Error Responses:**
-- `400` - Invalid input parameters
-- `403` - Insufficient privileges to perform this action
-- `404` - Namespace, registry, or record not found
-- `500` - Internal server error
-
-**State Transition Rules:**
-- ✅ `LIVE` → `REVOKED` (Allowed)
-- ✅ `DRAFT` → `REVOKED` (Allowed)
-- ✅ `SUSPENDED` → `REVOKED` (Allowed)
-- ❌ `REVOKED` → `REVOKED` (Record already revoked)
-- ❌ `EXPIRED` → `REVOKED` (Expired records cannot be revoked)
-
-## State Transition Matrix
-
-### Registry States
-
-| Current State | Suspend | Reinstate | Revoke |
-|---------------|---------|-----------|---------|
-| **LIVE**      | ✅ → SUSPENDED | ❌ Already Active | ✅ → REVOKED |
-| **SUSPENDED** | ❌ Already Suspended | ✅ → LIVE | ❌ Not Allowed |
-| **REVOKED**   | ❌ Not Allowed | ❌ Not Allowed | ❌ Already Revoked |
-| **EXPIRED**   | ❌ Not Allowed | ❌ Not Allowed | ❌ Not Allowed |
-
-### Record States
-
-| Current State | Suspend | Reinstate | Revoke |
-|---------------|---------|-----------|---------|
-| **LIVE**      | ✅ → SUSPENDED | ❌ Already Active | ✅ → REVOKED |
-| **DRAFT**     | ✅ → SUSPENDED | ❌ Use Publish | ✅ → REVOKED |
-| **SUSPENDED** | ❌ Already Suspended | ✅ → LIVE | ✅ → REVOKED |
-| **REVOKED**   | ❌ Not Allowed | ❌ Not Allowed | ❌ Already Revoked |
-| **EXPIRED**   | ❌ Not Allowed | ❌ Not Allowed | ❌ Not Allowed |
-
-**Note:** Record state management is dependent on the parent registry state. Records can only be managed when the parent registry is in `LIVE` state.
-
-## Reversibility Guide
-
-### Reversible Operations
-These operations can be undone:
-
-- **Suspend Registry**: Can be reversed with reinstate
-- **Suspend Record**: Can be reversed with reinstate
-
-**Example:**
-```typescript
-// Suspend and then reinstate a registry
-const suspendResponse = await fetch('https://api.dedi.global/dedi/acme-corp/products/suspend-registry', {
-  method: 'POST',
-  headers: {
-    'Authorization': 'Bearer YOUR_API_KEY',
-    'Content-Type': 'application/json'
-  }
-});
-
-const reinstateResponse = await fetch('https://api.dedi.global/dedi/acme-corp/products/reinstate-registry', {
-  method: 'POST',
-  headers: {
-    'Authorization': 'Bearer YOUR_API_KEY',
-    'Content-Type': 'application/json'
-  }
-});
-```
-
-### Irreversible Operations
-These operations **cannot** be undone:
-
-- **Revoke Registry**: Permanently removes registry access
-- **Revoke Record**: Permanently removes record access
-
-> ⚠️ **Warning**: Always ensure you want to permanently revoke access before calling revoke endpoints, as these changes cannot be reversed.
-
-## Use Cases & Examples
-
-### Temporary Maintenance
-
-When performing maintenance on your data infrastructure:
-
-```typescript
-// 1. Suspend registry to prevent new operations
-const suspendResponse = await fetch('https://api.dedi.global/dedi/acme-corp/products/suspend-registry', {
-  method: 'POST',
-  headers: {
-    'Authorization': 'Bearer YOUR_API_KEY',
-    'Content-Type': 'application/json'
-  }
-});
-
-// 2. Perform maintenance tasks
-// ...
-
-// 3. Reinstate registry to resume operations
-const reinstateResponse = await fetch('https://api.dedi.global/dedi/acme-corp/products/reinstate-registry', {
-  method: 'POST',
-  headers: {
-    'Authorization': 'Bearer YOUR_API_KEY',
-    'Content-Type': 'application/json'
-  }
-});
-```
-
-### Data Quality Issues
-
-When discovering data quality problems in specific records:
-
-```typescript
-// 1. Suspend problematic record immediately
-const suspendResponse = await fetch('https://api.dedi.global/dedi/acme-corp/products/defective-item/suspend-record', {
-  method: 'POST',
-  headers: {
-    'Authorization': 'Bearer YOUR_API_KEY',
-    'Content-Type': 'application/json'
-  }
-});
-
-// 2. Fix the underlying data issue
-// ...
-
-// 3. Reinstate the corrected record
-const reinstateResponse = await fetch('https://api.dedi.global/dedi/acme-corp/products/defective-item/reinstate-record', {
-  method: 'POST',
-  headers: {
-    'Authorization': 'Bearer YOUR_API_KEY',
-    'Content-Type': 'application/json'
-  }
-});
-```
-
-### Security Incidents
-
-When dealing with compromised or fraudulent data:
-
-```typescript
-// Permanently revoke compromised record
-const revokeResponse = await fetch('https://api.dedi.global/dedi/acme-corp/products/compromised-item/revoke-record', {
-  method: 'POST',
-  headers: {
-    'Authorization': 'Bearer YOUR_API_KEY',
-    'Content-Type': 'application/json'
-  }
-});
-```
-
-## Webhook Notifications
-
-State management operations trigger webhook notifications to registered watchers:
-
-### Registry State Changes
-- `registry.suspended` - Triggered when a registry is suspended
-- `registry.reinstated` - Triggered when a registry is reinstated  
-- `registry.revoked` - Triggered when a registry is revoked
-
-### Record State Changes
-- `record.suspended` - Triggered when a record is suspended
-- `record.reinstated` - Triggered when a record is reinstated
-- `record.revoked` - Triggered when a record is revoked
-
-**Example Webhook Payload:**
-
-```typescript
-{
-  "event": "registry.suspended",
-  "timestamp": "2024-12-19T10:30:00Z",
+  "message": "Namespace deleted successfully",
   "data": {
-    "namespace": "acme-corp",
-    "registry_name": "products",
-    "registry_id": "reg_123456789",
-    "tag": "latest",
-    "previous_state": "live",
-    "current_state": "suspended"
+    "namespace_id": "did:cord:...",
+    "deleted_namespace_versions": 3,
+    "deleted_registry_versions": 8,
+    "deleted_record_versions": 42
   }
 }
 ```
-## Error Handling
 
-### Common Error Responses
+### Delete Registry
 
-**404 - Resource Not Found:**
-```typescript
+**Endpoint:** `DELETE /dedi/{namespace}/{registry_name}/delete-registry`
+
+**Request Body:**
+
+```json
 {
-  "message": "Registry not found"
+  "reason": "Optional deletion reason"
 }
 ```
 
-**403 - Insufficient Privileges:**
-```typescript
+**Success Response (200):**
+
+```json
 {
-  "message": "Not enough privileges to perform this action"
+  "message": "Registry deleted successfully",
+  "data": {
+    "registry_name": "employee-profiles",
+    "deleted_registry_versions": 4,
+    "deleted_record_versions": 17
+  }
 }
 ```
 
-**400 - Invalid State Transition:**
-```typescript
+### Delete Records
+
+**Endpoint:** `DELETE /dedi/{namespace}/{registry_name}/delete-records`
+
+**Request Body:**
+
+```json
 {
-  "message": "Suspended registry cannot be revoked"
+  "records": ["record-a", "record-b"],
+  "reason": "Optional deletion reason"
 }
 ```
 
-**401 - Authentication Failed:**
-```typescript
+**Success Response (200):**
+
+```json
 {
-  "message": "Authentication failed"
+  "message": "Records deleted successfully",
+  "data": {
+    "count": 2,
+    "deleted_record_versions": 5,
+    "records": ["record-a", "record-b"]
+  }
 }
 ```
 
-## Best Practices
+## Deleted Entity Listing APIs
 
-### 1. Plan State Changes
-- Always communicate planned suspensions to stakeholders
-- Use suspend/reinstate for temporary issues
-- Reserve revoke for permanent removal only
+These endpoints return the latest deleted snapshot that is still eligible for restoration.
 
-### 2. Monitor Dependencies
-- Check downstream systems before suspending registries
-- Understand the impact on dependent records
-- Consider gradual rollouts for large registries
+### List Deleted Namespaces
 
-### 3. Use Webhooks
-- Set up webhook monitoring for state changes
-- Implement automated alerts for unexpected state transitions
-- Track state change patterns for audit purposes
+**Endpoint:** `GET /dedi/deleted/namespaces`
 
-### 4. Document Reasons
-- Maintain external logs explaining why state changes occurred
-- Include correlation IDs for tracking related operations
-- Document business justification for irreversible changes
+**Success Response (200):**
 
-<!-- ## Rate Limits
+```json
+{
+  "message": "Deleted namespaces fetched successfully",
+  "data": [
+    {
+      "namespace_id": "did:cord:...",
+      "name": "acme",
+      "state": "live",
+      "deleted_at": "2026-05-04T08:30:00.000Z",
+      "deleted_by": "did:cord:profile:...",
+      "delete_scope": "namespace",
+      "reason": "Cleanup"
+    }
+  ]
+}
+```
 
-State management operations have the following rate limits:
+### List Deleted Registries
 
-| Operation | Rate Limit |
-|-----------|------------|
-| Suspend   | 100 requests per minute |
-| Reinstate | 100 requests per minute |
-| Revoke    | 50 requests per minute |
+**Endpoint:** `GET /dedi/deleted/registries`
 
-> Rate limits are applied per API key and are designed to prevent accidental mass state changes while allowing legitimate operational needs. -->
+**Success Response (200):**
+
+```json
+{
+  "message": "Deleted registries fetched successfully",
+  "data": [
+    {
+      "namespace_id": "did:cord:...",
+      "registry_id": "did:cord:registry:...",
+      "registry_name": "employee-profiles",
+      "state": "inactive",
+      "deleted_history_id": "did:cord:registry:...",
+      "deleted_at": "2026-05-04T08:30:00.000Z",
+      "deleted_by": "did:cord:profile:...",
+      "delete_scope": "registry",
+      "reason": "Cleanup"
+    }
+  ]
+}
+```
+
+### List Deleted Records
+
+**Endpoint:** `GET /dedi/deleted/records`
+
+**Success Response (200):**
+
+```json
+{
+  "message": "Deleted records fetched successfully",
+  "data": [
+    {
+      "namespace_id": "did:cord:...",
+      "registry_name": "employee-profiles",
+      "record_id": "did:cord:record:...",
+      "record_name": "john-doe",
+      "state": "live",
+      "deleted_history_id": "did:cord:record:...",
+      "deleted_at": "2026-05-04T08:30:00.000Z",
+      "deleted_by": "did:cord:profile:...",
+      "delete_scope": "record",
+      "reason": "Cleanup"
+    }
+  ]
+}
+```
+
+## Restore APIs
+
+### Restore Namespace
+
+**Endpoint:** `POST /dedi/restore/namespace`
+
+**Request Body:**
+
+```json
+{
+  "namespace_id": "did:cord:..."
+}
+```
+
+**Success Response (200):**
+
+```json
+{
+  "message": "Namespace restored successfully",
+  "data": {
+    "namespace_id": "did:cord:...",
+    "restored_namespace_versions": 3
+  }
+}
+```
+
+### Restore Registry
+
+**Endpoint:** `POST /dedi/restore/registry`
+
+**Request Body:**
+
+```json
+{
+  "namespace_id": "did:cord:...",
+  "registry_name": "employee-profiles",
+  "deleted_history_id": "did:cord:registry:..."
+}
+```
+
+**Success Response (200):**
+
+```json
+{
+  "message": "Registry restored successfully",
+  "data": {
+    "namespace_id": "did:cord:...",
+    "registry_name": "employee-profiles",
+    "restored_registry_versions": 4
+  }
+}
+```
+
+**Important:** If multiple deleted histories exist for the same registry name, `deleted_history_id` is required.
+
+### Restore Records
+
+**Endpoint:** `POST /dedi/restore/records`
+
+**Request Body:**
+
+```json
+{
+  "records": [
+    {
+      "namespace_id": "did:cord:...",
+      "registry_name": "employee-profiles",
+      "record_name": "john-doe",
+      "deleted_history_id": "did:cord:record:..."
+    }
+  ]
+}
+```
+
+**Success Response (200):**
+
+```json
+{
+  "message": "Records restored successfully",
+  "data": {
+    "restored_record_versions": 2,
+    "records": [
+      {
+        "namespace_id": "did:cord:...",
+        "registry_name": "employee-profiles",
+        "record_name": "john-doe",
+        "deleted_history_id": "did:cord:record:..."
+      }
+    ]
+  }
+}
+```
+
+**Important:** If multiple deleted histories exist for the same record name, `deleted_history_id` is required.
+
+## Deleted Entity Retention Window
+
+- Deleted namespaces, registries, and records remain restorable during the deleted-entity retention window.
+- The current implementation keeps deleted entities in the recovery surface for a configurable retention period.
+- The default retention period is `3` days.
+- After the retention window expires, deleted entities are moved to permanent archival storage and can no longer be restored through the public APIs.
+
+## Related APIs
+
+- Publishing and draft-to-live flows: [Publish APIs](./publish.md)
+- Versioned edits: [Update APIs](./update.md)
+- Domain trust lifecycle: [Domain Verification APIs](./domain.md)
+- Delegation and namespace ownership changes: [Delegation Management APIs](./delegation.md)

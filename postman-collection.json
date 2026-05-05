@@ -814,7 +814,7 @@
                 "create-namespace"
               ]
             },
-            "description": "📁 CREATE NAMESPACE\n\nCreates a new namespace to organize and group related registries.\n\n**Authentication:** Required (Cookie or API Key)\n\n**Request Body:**\n- `name`: Unique namespace name (string, required)\n- `description`: Description of the namespace purpose (string, required)\n- `meta`: Additional metadata (object, optional)\n- `version_count`: Version number (number, optional)\n\n**Response:**\n- Namespace details including `namespace_id`, `digest`, and creation info\n- The `namespace_id` can be used in subsequent registry and record operations\n\n**Use Cases:**\n- Organizing data by department/project\n- Creating isolated environments\n- Setting up customer-specific data spaces\n- Domain-based data segregation\n\n**Rate Limits:** Standard API rate limits apply"
+            "description": "📁 CREATE NAMESPACE\n\nCreates a new namespace to organize related registries.\n\n**Authentication:** Required (Cookie or API Key)\n\n**Request Body:**\n- `name`: Unique namespace name (required)\n- `description`: Namespace description (required)\n- `meta`: Additional metadata (optional)\n- `version_count`: Initial version count (optional)\n\n**Success Response (201):**\n```json\n{\n  \"message\": \"Namespace created successfully\",\n  \"data\": {\n    \"namespace_id\": \"did:cord:namespace:...\"\n  }\n}\n```\n\n**Use Cases:**\n- Organizing data by department, project, or domain\n- Creating isolated environments\n- Setting up customer-specific data spaces"
           },
           "response": []
         },
@@ -892,7 +892,7 @@
                 "create-registry"
               ]
             },
-            "description": "📋 CREATE REGISTRY\n\nCreates a new registry within a namespace to store structured records.\n\n**Authentication:** Required (Cookie or API Key)\n\n**Path Parameters:**\n- `namespace`: The namespace ID or domain where the registry will be created\n\n**Request Body:**\n- `registry_name`: Unique name for the registry\n- `description`: Description of what this registry stores\n- `schema`: JSON Schema defining the structure of records\n- `tag`: Schema tag ('custom', 'membership', 'public_key', 'revoke')\n- `meta`: Additional metadata (optional)\n\n**Response:**\n- Registry details including `registry_id`, `digest`, and metadata\n\n**Use Cases:**\n- Setting up data collection schemas\n- Creating structured data repositories\n- Defining verification templates"
+            "description": "📋 CREATE REGISTRY\n\nCreates a new registry within a namespace to store structured records.\n\n**Authentication:** Required (Cookie or API Key)\n\n**Path Parameters:**\n- `namespace`: Namespace ID or verified domain where the registry will be created\n\n**Request Body:**\n- `registry_name`: Unique registry name (required)\n- `description`: Registry description (required)\n- `schema`: Custom JSON Schema for record validation (provide for custom registries)\n- `tag`: Pre-built schema tag (`membership`, `public_key`, `revoke`, `beckn_subscriber`, `beckn_subscriber_reference`)\n- `meta`: Additional metadata (optional)\n\n**Contract Rules:**\n- Provide either `schema` or `tag`\n- Do not send both `schema` and `tag` in the same request\n\n**Success Response (201):**\n```json\n{\n  \"message\": \"Registry created\",\n  \"data\": {\n    \"registry_id\": \"did:cord:registry:...\"\n  }\n}\n```"
           },
           "response": []
         },
@@ -976,84 +976,7 @@
                 }
               ]
             },
-            "description": "💾 SAVE RECORD AS DRAFT\n\nCreates a new record in draft state within a registry. Draft records can be modified before publishing.\n\n**Authentication:** Required (Cookie or API Key)\n\n**Path Parameters:**\n- `namespace`: Namespace ID or domain\n- `registry_name`: Target registry name\n\n**Query Parameters:**\n- `publish`: Set to 'true' to save and publish immediately (optional)\n\n**Request Body:**\n- `record_name`: Unique record name (string, required)\n- `description`: Record description (string, required)\n- `details`: Record data matching registry schema (object, required)\n- `meta`: Application metadata (object, optional)\n- `valid_till`: Expiration date in ISO format (string, optional)\n\n**Response:**\n- Record details including `record_id` and draft status\n\n**Use Cases:**\n- Creating records that need review before publishing\n- Batch record preparation\n- Multi-step record creation workflows"
-          },
-          "response": []
-        },
-        {
-          "name": "Delete Draft Records",
-          "event": [
-            {
-              "listen": "prerequest",
-              "script": {
-                "exec": [
-                  "// ✅ Authentication is handled automatically by the global collection script",
-                  "// Verify required variables are set",
-                  "const requiredVars = ['namespace', 'registry_name', 'record_name'];",
-                  "const missing = requiredVars.filter(v => !pm.collectionVariables.get(v));",
-                  "if (missing.length > 0) {",
-                  "  console.warn('⚠️ Missing required variables:', missing.join(', '));",
-                  "  console.warn('📋 Run create-namespace, create-registry, and save-record-as-draft first');",
-                  "}"
-                ],
-                "type": "text/javascript",
-                "packages": {},
-                "requests": {}
-              }
-            },
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test(\"Status code is 200, 400, 401, 403, 404, or 500\", function () {",
-                  "  pm.expect(pm.response.code).to.be.oneOf([200, 400, 401, 403, 404, 500]);",
-                  "});",
-                  "pm.test(\"Response has message\", function () {",
-                  "  pm.expect(pm.response.json()).to.have.property(\"message\");",
-                  "});",
-                  "if (pm.response.code === 200) {",
-                  "  const response = pm.response.json();",
-                  "  pm.expect(response).to.have.property(\"data\");",
-                  "  if (response.data.record_id) {",
-                  "    pm.collectionVariables.set(\"record_id\", response.data.record_id);",
-                  "    console.log('✅ Record published:', response.data.record_id);",
-                  "  }",
-                  "}"
-                ],
-                "type": "text/javascript",
-                "packages": {},
-                "requests": {}
-              }
-            }
-          ],
-          "request": {
-            "auth": {
-              "type": "noauth"
-            },
-            "method": "DELETE",
-            "header": [],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"records\": [\"x\",\"y\",\"z\"]\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{url}}/dedi/{{namespace}}/{{registry_name}}/delete-draft-records",
-              "host": [
-                "{{url}}"
-              ],
-              "path": [
-                "dedi",
-                "{{namespace}}",
-                "{{registry_name}}",
-                "delete-draft-records"
-              ]
-            },
-            "description": "📤 PUBLISH RECORD\n\nPublishes a record from draft state to live state, making it available for queries and verification.\n\n**Authentication:** Required (Cookie or API Key)\n\n**Path Parameters:**\n- `namespace`: Namespace ID or domain\n- `registry_name`: Registry name containing the record\n- `record_name`: Name of the record to publish\n\n**Prerequisites:**\n- Record must exist in 'draft' state\n- User must have authorization to the registry\n- Registry must be active (not revoked/archived)\n\n**Response:**\n- Confirmation message with `record_id`\n- Record state changes from 'draft' to 'live'\n\n**Use Cases:**\n- Making draft records publicly available\n- Finalizing record creation workflow\n- Triggering registry watchers and notifications\n\n**Important:** Once published, records cannot be unpublished, only updated or revoked."
+            "description": "💾 SAVE RECORD AS DRAFT\n\nCreates a new draft record within a live registry.\n\n**Authentication:** Required (Cookie or API Key)\n\n**Path Parameters:**\n- `namespace`: Namespace ID or verified domain\n- `registry_name`: Target registry name\n\n**Query Parameters:**\n- `publish`: Set to `true` to trigger the direct create flow instead of keeping the record as a draft\n\n**Request Body:**\n- `record_name`: Unique record name (required)\n- `description`: Record description (required)\n- `details`: Record data matching the registry schema (required)\n- `meta`: Additional metadata (optional)\n- `valid_till`: Expiration timestamp in ISO 8601 format (optional)\n\n**Success Response (201) with `publish=false`:**\n```json\n{\n  \"message\": \"record saved as draft\",\n  \"data\": {\n    \"record_name\": \"john-doe-profile\"\n  }\n}\n```\n\n**Success Response (201) with `publish=true`:**\n```json\n{\n  \"message\": \"record created\",\n  \"data\": {\n    \"record_id\": \"did:cord:record:...\"\n  }\n}\n```"
           },
           "response": []
         },
@@ -1091,9 +1014,9 @@
                   "if (pm.response.code === 200) {",
                   "  const response = pm.response.json();",
                   "  pm.expect(response).to.have.property(\"data\");",
-                  "  if (response.data.record_id) {",
-                  "    pm.collectionVariables.set(\"record_id\", response.data.record_id);",
-                  "    console.log('✅ Record published:', response.data.record_id);",
+                  "  if (Array.isArray(response.data.record_ids) && response.data.record_ids.length > 0) {",
+                  "    pm.collectionVariables.set(\"record_id\", response.data.record_ids[0]);",
+                  "    console.log('✅ Records queued for publish:', response.data.record_ids.join(', '));",
                   "  }",
                   "}"
                 ],
@@ -1111,7 +1034,7 @@
             "header": [],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"records\": [\"x\",\"y\",\"z\"]\n}",
+              "raw": "{\n  \"records\": [\"{{record_name}}\"]\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1130,7 +1053,7 @@
                 "publish-records"
               ]
             },
-            "description": "📤 PUBLISH RECORD\n\nPublishes a record from draft state to live state, making it available for queries and verification.\n\n**Authentication:** Required (Cookie or API Key)\n\n**Path Parameters:**\n- `namespace`: Namespace ID or domain\n- `registry_name`: Registry name containing the record\n- `record_name`: Name of the record to publish\n\n**Prerequisites:**\n- Record must exist in 'draft' state\n- User must have authorization to the registry\n- Registry must be active (not revoked/archived)\n\n**Response:**\n- Confirmation message with `record_id`\n- Record state changes from 'draft' to 'live'\n\n**Use Cases:**\n- Making draft records publicly available\n- Finalizing record creation workflow\n- Triggering registry watchers and notifications\n\n**Important:** Once published, records cannot be unpublished, only updated or revoked."
+            "description": "📤 PUBLISH RECORDS\n\nQueues one or more existing draft records for publication.\n\n**Authentication:** Required (Cookie or API Key)\n\n**Path Parameters:**\n- `namespace`: Namespace ID or verified domain\n- `registry_name`: Registry containing the draft records\n\n**Request Body:**\n- `records`: Array of draft record names to publish\n\n**Prerequisites:**\n- Every listed record must already exist in `draft` state\n- The registry must be in `live` state\n- The caller must be authorized for the registry\n\n**Success Response (200):**\n```json\n{\n  \"message\": \"Records are in publish queue\",\n  \"data\": {\n    \"count\": 2,\n    \"record_ids\": [\"did:cord:record:1\", \"did:cord:record:2\"]\n  }\n}\n```"
           },
           "response": []
         },
@@ -1216,7 +1139,7 @@
                 "bulk-upload"
               ]
             },
-            "description": "📊 BULK UPLOAD RECORDS\n\nUpload multiple records via CSV files. Creates an asynchronous job for processing large datasets.\n\n**Authentication:** Required (Cookie or API Key)\n\n**Form Data:**\n- `namespace`: Target namespace ID (required)\n- `registry_name`: Target registry name (optional - if not provided, will auto-detect from CSV)\n- `file`: CSV file(s) to upload (required, max 100MB each, up to 1000 files)\n\n**CSV Format:**\n- Headers should match registry schema fields\n- Supports nested structures via dot notation\n- First row must contain field names\n\n**Response:**\n- Job ID for status tracking\n- Status check URL\n- Total file count\n\n**Asynchronous Processing:**\n1. Submit files → Receive job ID\n2. Check status periodically\n3. Handle completion/errors\n\n**Rate Limits:** File size and count limits apply\n**File Requirements:** CSV format, valid UTF-8 encoding"
+            "description": "📊 BULK UPLOAD RECORDS\n\nUpload a single CSV file and create an asynchronous processing job.\n\n**Authentication:** Required (Cookie or API Key)\n\n**Form Data:**\n- `namespace`: Target namespace ID or verified domain (required)\n- `registry_name`: Target registry name (required)\n- `record_name_field`: Optional CSV column to use as `record_name`\n- `file`: Single CSV upload (required, max 100MB)\n\n**CSV Format:**\n- Headers should match registry schema fields\n- Supports nested structures via dot notation\n- First row must contain field names\n\n**Response:**\n- Job ID for status tracking\n- Status check URL\n- Backend-reported `total_rows`\n\n**Asynchronous Processing:**\n1. Submit the CSV file\n2. Receive the job ID\n3. Check status periodically\n4. Review failed-entry endpoints if needed\n\n**File Requirements:** CSV format, valid UTF-8 encoding"
           },
           "response": []
         },
@@ -1252,8 +1175,10 @@
                   "    pm.expect(res).to.have.property(\"data\");",
                   "    pm.expect(res.data).to.have.property(\"status\");",
                   "    pm.expect(res.data).to.have.property(\"jobId\");",
-                  "    pm.expect(res.data).to.have.property(\"progress\");",
-                  "    console.log('Job Status:', res.data.status, '- Progress:', res.data.progress + '%');",
+                  "    pm.expect(res.data).to.have.property(\"totalEntries\");",
+                  "    pm.expect(res.data).to.have.property(\"validEntries\");",
+                  "    pm.expect(res.data).to.have.property(\"failedEntries\");",
+                  "    console.log('Job Status:', res.data.status, '- Entries:', res.data.validEntries + '/' + res.data.totalEntries);",
                   "  }",
                   "});"
                 ]
@@ -1278,7 +1203,7 @@
                 "{{bulk_upload_jobId}}"
               ]
             },
-            "description": "📈 GET BULK UPLOAD JOB STATUS\n\nCheck the progress and status of a bulk upload job.\n\n**Authentication:** Required (Cookie or API Key)\n\n**Path Parameters:**\n- `jobId`: The job ID returned from bulk upload\n\n**Response Details:**\n- `status`: Job status (pending, processing, completed, failed, cancelled)\n- `progress`: Completion percentage (0-100)\n- `totalFiles`: Total number of files in the job\n- `processedFiles`: Number of files processed\n- `failedFiles`: Number of files that failed\n- `results`: Array of processing results\n- `error`: Error details if job failed\n\n**Job States:**\n- `pending`: Job queued, waiting to start\n- `processing`: Currently processing files\n- `completed`: All files processed successfully\n- `failed`: Job failed with errors\n- `cancelled`: Job was cancelled by user\n\n**Polling Recommendation:** Check status every 5-10 seconds during processing"
+            "description": "📈 GET BULK UPLOAD JOB STATUS\n\nCheck the current status of a bulk upload job.\n\n**Authentication:** Required (Cookie or API Key)\n\n**Path Parameters:**\n- `jobId`: The job ID returned from bulk upload\n\n**Response Details:**\n- `status`: Job status (`pending`, `processing`, `completed`, `failed`)\n- `totalEntries`: Rows discovered in the CSV\n- `validEntries`: Rows processed successfully\n- `failedEntries`: Rows that failed validation or processing\n- `failedEntriesUrl`: Relative endpoint for JSON failed-entry output\n- `downloadFailedEntriesCsvUrl`: Relative endpoint for CSV download when failures exist\n- `error`: Error details if the job failed"
           },
           "response": []
         },
@@ -1315,8 +1240,8 @@
                   "    pm.expect(res).to.have.property(\"data\");",
                   "    pm.expect(res.data).to.have.property(\"status\");",
                   "    pm.expect(res.data).to.have.property(\"jobId\");",
-                  "    pm.expect(res.data).to.have.property(\"progress\");",
-                  "    console.log('Job Status:', res.data.status, '- Progress:', res.data.progress + '%');",
+                  "    pm.expect(res.data).to.have.property(\"entries\");",
+                  "    console.log('✅ Failed entries retrieved:', res.data.entries.length);",
                   "  }",
                   "});"
                 ],
@@ -1350,7 +1275,7 @@
                 }
               ]
             },
-            "description": "📈 GET BULK UPLOAD JOB STATUS\n\nCheck the progress and status of a bulk upload job.\n\n**Authentication:** Required (Cookie or API Key)\n\n**Path Parameters:**\n- `jobId`: The job ID returned from bulk upload\n\n**Response Details:**\n- `status`: Job status (pending, processing, completed, failed, cancelled)\n- `progress`: Completion percentage (0-100)\n- `totalFiles`: Total number of files in the job\n- `processedFiles`: Number of files processed\n- `failedFiles`: Number of files that failed\n- `results`: Array of processing results\n- `error`: Error details if job failed\n\n**Job States:**\n- `pending`: Job queued, waiting to start\n- `processing`: Currently processing files\n- `completed`: All files processed successfully\n- `failed`: Job failed with errors\n- `cancelled`: Job was cancelled by user\n\n**Polling Recommendation:** Check status every 5-10 seconds during processing"
+            "description": "⚠️ GET FAILED BULK-UPLOAD ENTRIES\n\nRetrieve the failed rows for a completed or failed bulk-upload job.\n\n**Authentication:** Required (Cookie or API Key)\n\n**Path Parameters:**\n- `jobId`: The job ID returned from bulk upload\n\n**Response Details:**\n- `entries`: Array of failed rows with validation or processing errors\n- `jobId`: The originating bulk-upload job identifier"
           },
           "response": []
         },
@@ -1387,8 +1312,7 @@
                   "    pm.expect(res).to.have.property(\"data\");",
                   "    pm.expect(res.data).to.have.property(\"status\");",
                   "    pm.expect(res.data).to.have.property(\"jobId\");",
-                  "    pm.expect(res.data).to.have.property(\"progress\");",
-                  "    console.log('Job Status:', res.data.status, '- Progress:', res.data.progress + '%');",
+                  "    console.log('✅ Failed-entry CSV download endpoint responded');",
                   "  }",
                   "});"
                 ],
@@ -1423,7 +1347,7 @@
                 }
               ]
             },
-            "description": "📈 GET BULK UPLOAD JOB STATUS\n\nCheck the progress and status of a bulk upload job.\n\n**Authentication:** Required (Cookie or API Key)\n\n**Path Parameters:**\n- `jobId`: The job ID returned from bulk upload\n\n**Response Details:**\n- `status`: Job status (pending, processing, completed, failed, cancelled)\n- `progress`: Completion percentage (0-100)\n- `totalFiles`: Total number of files in the job\n- `processedFiles`: Number of files processed\n- `failedFiles`: Number of files that failed\n- `results`: Array of processing results\n- `error`: Error details if job failed\n\n**Job States:**\n- `pending`: Job queued, waiting to start\n- `processing`: Currently processing files\n- `completed`: All files processed successfully\n- `failed`: Job failed with errors\n- `cancelled`: Job was cancelled by user\n\n**Polling Recommendation:** Check status every 5-10 seconds during processing"
+            "description": "📄 DOWNLOAD FAILED BULK-UPLOAD ENTRIES AS CSV\n\nDownload the failed rows for a bulk-upload job as a CSV file.\n\n**Authentication:** Required (Cookie or API Key)\n\n**Path Parameters:**\n- `jobId`: The job ID returned from bulk upload\n\n**Response:**\n- CSV download containing failed rows and their associated errors"
           },
           "response": []
         },
@@ -1492,7 +1416,44 @@
                 }
               ]
             },
-            "description": "📋 GET USER BULK UPLOAD JOBS\n\nRetrieve a paginated list of all bulk upload jobs for the authenticated user.\n\n**Authentication:** Required (Cookie or API Key)\n\n**Query Parameters:**\n- `page`: Page number (default: 1)\n- `limit`: Jobs per page (default: 10, max: 100)\n\n**Response Structure:**\n- `jobs`: Array of job objects with status and progress\n- `pagination`: Page info with total count and pages\n\n**Job Object Fields:**\n- `jobId`: Unique job identifier\n- `status`: Current job status\n- `progress`: Completion percentage\n- `totalFiles`: Number of files in job\n- `processedFiles`: Files successfully processed\n- `failedFiles`: Files that failed processing\n- `createdAt`: Job creation timestamp\n- `updatedAt`: Last update timestamp\n- `namespace`: Target namespace\n- `error`: Error message if failed\n\n**Use Cases:**\n- Job history tracking\n- Monitoring multiple uploads\n- Audit trail for data uploads"
+            "description": "📋 GET USER BULK UPLOAD JOBS\n\nRetrieve a paginated list of bulk upload jobs for the authenticated user.\n\n**Authentication:** Required (Cookie or API Key)\n\n**Query Parameters:**\n- `page`: Page number (default: 1)\n- `limit`: Jobs per page (default: 10)\n\n**Response Structure:**\n- `jobs`: Array of job objects with status, timestamps, namespace, and any error text\n- `pagination`: Page info with total count and pages\n\n**Use Cases:**\n- Job history tracking\n- Monitoring multiple uploads\n- Audit trail for data uploads"
+          },
+          "response": []
+        },
+        {
+          "name": "Download sample CSV template",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is one of 200, 400, 401, 403, 404, 500\", function () {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200, 400, 401, 403, 404, 500]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{url}}/dedi/{{namespace}}/{{registry_name}}/download-sample-csv",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "dedi",
+                "%7B%7Bnamespace%7D%7D",
+                "%7B%7Bregistry_name%7D%7D",
+                "download-sample-csv"
+              ]
+            },
+            "description": "📄 DOWNLOAD REGISTRY CSV TEMPLATE\n\nDownload a schema-derived CSV template for a registry.\n\n**Authentication:** Required (Cookie or API Key)\n\n**Path Parameters:**\n- `namespace`: Namespace ID or verified domain\n- `registry_name`: Registry name\n\n**Success Response:**\n- Returns a `text/csv` attachment named `{registry_name}_template.csv`\n\n**Error Cases:**\n- **400**: Registry schema not found or schema has no exportable fields\n- **404**: Namespace not found or registry not found\n- **500**: Failed to export CSV template"
           },
           "response": []
         }
@@ -1887,6 +1848,58 @@
             "description": "👥📋 GET NAMESPACE DELEGATES\n\nRetrieve a list of all delegates for a specific namespace.\n\n**Authentication:** Required (Cookie or API Key)\n\n**Path Parameters:**\n- `namespace`: Namespace ID or domain\n\n**Response:**\n- Array of delegate user information\n- Includes email addresses and user details\n\n**Use Cases:**\n- Audit namespace access permissions\n- Display current administrators\n- Manage namespace access control"
           },
           "response": []
+        },
+        {
+          "name": "Transfer namespace ownership",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is one of 200, 400, 401, 403, 404, 409, 500\", function () {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200, 400, 401, 403, 404, 409, 500]);",
+                  "});",
+                  "const contentType = pm.response.headers.get(\"Content-Type\") || \"\";",
+                  "if (contentType.includes(\"application/json\")) {",
+                  "  const response = pm.response.json();",
+                  "  pm.test(\"Response has message\", function () {",
+                  "    pm.expect(response).to.have.property(\"message\");",
+                  "  });",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{url}}/dedi/{{namespace}}/transfer-ownership",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "dedi",
+                "%7B%7Bnamespace%7D%7D",
+                "transfer-ownership"
+              ]
+            },
+            "description": "🔁 TRANSFER NAMESPACE OWNERSHIP\n\nTransfer a namespace to another registered user.\n\n**Authentication:** Required (Cookie or API Key)\n\n**Path Parameters:**\n- `namespace`: Namespace ID or verified domain\n\n**Request Body:**\n- `email`: Email address of the new owner\n\n**Success Response (200):**\n```json\n{\n  \"message\": \"Namespace transferred successfully\",\n  \"new_owner\": {\n    \"email\": \"owner@example.com\",\n    \"profile_id\": \"did:cord:profile:...\"\n  }\n}\n```",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{delegate_email}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
         }
       ]
     },
@@ -1959,7 +1972,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{url}}/dedi/generate-dns-txt/{{namespace}}/{{domain}}",
+              "raw": "{{url}}/dedi/generate-dns-txt/{{namespace}}/{{domain}}?verification_method=self_dns",
               "host": [
                 "{{url}}"
               ],
@@ -1968,9 +1981,16 @@
                 "generate-dns-txt",
                 "{{namespace}}",
                 "{{domain}}"
+              ],
+              "query": [
+                {
+                  "key": "verification_method",
+                  "value": "self_dns",
+                  "description": "Supported values: self_dns, self_http, request_other_namespace"
+                }
               ]
             },
-            "description": "🔐 GENERATE DNS TXT RECORD\n\nGenerate a DNS TXT record for domain verification.\n\n**Authentication:** Required (Cookie or API Key)\n\n**Path Parameters:**\n- `namespace_id`: Target namespace ID\n- `domain`: Domain to verify (must be in global registry)\n\n**Validation Rules:**\n- Domain must contain a dot (valid format)\n- Domain must exist in global registry\n- Namespace must exist and not be already verified\n- Domain cannot be already verified by another namespace\n\n**Response Scenarios:**\n- 200: TXT record generated successfully\n- 200: TXT record already exists (returns existing)\n- 400: Invalid domain format or domain issues\n- 404: Namespace not found\n- 500: Internal server error\n\n**Response Format:**\n```json\n{\n  \"message\": \"Generated domain's DNS TXT record\",\n  \"txt\": \"verification_string\"\n}\n```\n\n**Usage Flow:**\n1. Generate TXT record\n2. Add TXT record to domain's DNS\n3. Call verify-domain endpoint\n4. Check verification status\n\n**Note:** Store the returned TXT record and add it to your domain's DNS settings before verification."
+            "description": "🔐 GENERATE DOMAIN VERIFICATION VALUE\n\nGenerate the verification value used by the backend domain-verification flow.\n\n**Authentication:** Required (Cookie or API Key)\n\n**Path Parameters:**\n- `namespace_id`: Target namespace ID\n- `domain`: Domain to verify\n\n**Query Parameters:**\n- `verification_method`: `self_dns`, `self_http`, or `request_other_namespace`\n- `target_namespace`: Required when `verification_method=request_other_namespace`\n\n**Validation Rules:**\n- Domain must contain a dot\n- Namespace must exist\n- Domain cannot already be actively verified by another namespace\n- Self-managed verification requires the domain to be present in the global registry\n\n**Response Scenarios:**\n- 200: TXT generated successfully\n- 200: Existing TXT reused\n- 200: Verification request created for `request_other_namespace`\n- 400: Invalid domain/method or missing target namespace\n- 404: Namespace or target namespace not found\n- 500: Internal server error"
           },
           "response": []
         },
@@ -2050,7 +2070,7 @@
                 "verify-domain"
               ]
             },
-            "description": "✅ VERIFY DOMAIN OWNERSHIP\n\nVerify domain ownership by checking the TXT record in DNS.\n\n**Authentication:** Required (Cookie or API Key)\n\n**Request Body:**\n```json\n{\n  \"namespace_id\": \"your-namespace-id\"\n}\n```\n\n**Prerequisites:**\n- TXT record must be generated first (generate-dns-txt)\n- TXT record must be added to domain's DNS settings\n- DNS propagation should be complete\n\n**Verification Process:**\n1. Checks if namespace exists\n2. Retrieves domain and TXT record from database\n3. Performs DNS lookup on the domain\n4. Validates TXT record matches generated value\n5. Updates namespace and domain verification status\n\n**Response Scenarios:**\n- 200: Verification successful\n- 400: Namespace ID missing or domain issues\n- 404: Namespace not found or TXT record not found in DNS\n- 500: DNS resolution errors\n\n**Important Notes:**\n- DNS changes may take time to propagate (up to 48 hours)\n- Only one domain can be verified per namespace\n- Domain cannot be shared between namespaces"
+            "description": "✅ VERIFY DOMAIN OWNERSHIP\n\nVerify a self-managed domain proof.\n\n**Authentication:** Required (Cookie or API Key)\n\n**Request Body:**\n```json\n{\n  \"namespace_id\": \"your-namespace-id\",\n  \"domain\": \"optional-domain.example\"\n}\n```\n\n**Verification Process:**\n1. Loads the generated self-verification record\n2. Tries DNS TXT verification first\n3. Falls back to `https://<domain>/.well-known/dedi-verification.txt`\n4. Marks the namespace as verified when either proof matches\n\n**Response Scenarios:**\n- 200: Verification successful\n- 400: Namespace ID missing, proof mismatch, or domain conflict\n- 404: Namespace not found or verification TXT not generated\n- 500: Internal verification error"
           },
           "response": []
         },
@@ -2209,16 +2229,279 @@
               "raw": ""
             },
             "url": {
-              "raw": "{{url}}/dedi/{{namespace}}/remove-namespace-verification",
+              "raw": "{{url}}/dedi/{{namespace}}/{{domain}}/remove-namespace-verification",
               "host": [
                 "{{url}}"
               ],
               "path": [
                 "dedi",
                 "{{namespace}}",
+                "{{domain}}",
                 "remove-namespace-verification"
               ]
+            },
+            "description": "🧹 REMOVE NAMESPACE VERIFICATION\n\nRemove stored verification entries for a namespace/domain pair.\n\n**Authentication:** Required (Cookie or API Key)\n\n**Path Parameters:**\n- `namespace`: Namespace ID\n- `domain`: Domain whose verification should be removed\n\n**Response:**\n- Returns the removed domain and backend-computed removal summary"
+          },
+          "response": []
+        },
+        {
+          "name": "Get pending verification notifications",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is one of 200, 400, 401, 403, 404, 409, 500\", function () {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200, 400, 401, 403, 404, 409, 500]);",
+                  "});",
+                  "const contentType = pm.response.headers.get(\"Content-Type\") || \"\";",
+                  "if (contentType.includes(\"application/json\")) {",
+                  "  const response = pm.response.json();",
+                  "  pm.test(\"Response has message\", function () {",
+                  "    pm.expect(response).to.have.property(\"message\");",
+                  "  });",
+                  "}"
+                ]
+              }
             }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{url}}/dedi/notifications/pending",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "dedi",
+                "notifications",
+                "pending"
+              ]
+            },
+            "description": "📨 GET PENDING VERIFICATION NOTIFICATIONS\n\nRetrieve unread delegated verification notifications for the authenticated user."
+          },
+          "response": []
+        },
+        {
+          "name": "Get verification notification history",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is one of 200, 400, 401, 403, 404, 409, 500\", function () {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200, 400, 401, 403, 404, 409, 500]);",
+                  "});",
+                  "const contentType = pm.response.headers.get(\"Content-Type\") || \"\";",
+                  "if (contentType.includes(\"application/json\")) {",
+                  "  const response = pm.response.json();",
+                  "  pm.test(\"Response has message\", function () {",
+                  "    pm.expect(response).to.have.property(\"message\");",
+                  "  });",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{url}}/dedi/notifications/history",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "dedi",
+                "notifications",
+                "history"
+              ]
+            },
+            "description": "🗂️ GET VERIFICATION NOTIFICATION HISTORY\n\nRetrieve read delegated verification notifications for the authenticated user."
+          },
+          "response": []
+        },
+        {
+          "name": "Mark all verification notifications as read",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is one of 200, 400, 401, 403, 404, 409, 500\", function () {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200, 400, 401, 403, 404, 409, 500]);",
+                  "});",
+                  "const contentType = pm.response.headers.get(\"Content-Type\") || \"\";",
+                  "if (contentType.includes(\"application/json\")) {",
+                  "  const response = pm.response.json();",
+                  "  pm.test(\"Response has message\", function () {",
+                  "    pm.expect(response).to.have.property(\"message\");",
+                  "  });",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{url}}/dedi/notifications/read-all",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "dedi",
+                "notifications",
+                "read-all"
+              ]
+            },
+            "description": "✅ MARK ALL VERIFICATION NOTIFICATIONS AS READ\n\nMark all unread verification notifications as read."
+          },
+          "response": []
+        },
+        {
+          "name": "Mark verification notification as read",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is one of 200, 400, 401, 403, 404, 409, 500\", function () {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200, 400, 401, 403, 404, 409, 500]);",
+                  "});",
+                  "const contentType = pm.response.headers.get(\"Content-Type\") || \"\";",
+                  "if (contentType.includes(\"application/json\")) {",
+                  "  const response = pm.response.json();",
+                  "  pm.test(\"Response has message\", function () {",
+                  "    pm.expect(response).to.have.property(\"message\");",
+                  "  });",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{url}}/dedi/notifications/{{notification_id}}/read",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "dedi",
+                "notifications",
+                "%7B%7Bnotification_id%7D%7D",
+                "read"
+              ]
+            },
+            "description": "✅ MARK VERIFICATION NOTIFICATION AS READ\n\nMark a specific verification notification as read."
+          },
+          "response": []
+        },
+        {
+          "name": "Accept verification request",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is one of 200, 400, 401, 403, 404, 409, 500\", function () {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200, 400, 401, 403, 404, 409, 500]);",
+                  "});",
+                  "const contentType = pm.response.headers.get(\"Content-Type\") || \"\";",
+                  "if (contentType.includes(\"application/json\")) {",
+                  "  const response = pm.response.json();",
+                  "  pm.test(\"Response has message\", function () {",
+                  "    pm.expect(response).to.have.property(\"message\");",
+                  "  });",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{url}}/dedi/verification-requests/{{verification_request_id}}/accept",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "dedi",
+                "verification-requests",
+                "%7B%7Bverification_request_id%7D%7D",
+                "accept"
+              ]
+            },
+            "description": "✅ ACCEPT VERIFICATION REQUEST\n\nAccept a pending delegated domain-verification request.\n\n**Success Response (200):** returns `request_id`, `registry_id`, and `record_id`."
+          },
+          "response": []
+        },
+        {
+          "name": "Reject verification request",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is one of 200, 400, 401, 403, 404, 409, 500\", function () {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200, 400, 401, 403, 404, 409, 500]);",
+                  "});",
+                  "const contentType = pm.response.headers.get(\"Content-Type\") || \"\";",
+                  "if (contentType.includes(\"application/json\")) {",
+                  "  const response = pm.response.json();",
+                  "  pm.test(\"Response has message\", function () {",
+                  "    pm.expect(response).to.have.property(\"message\");",
+                  "  });",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{url}}/dedi/verification-requests/{{verification_request_id}}/reject",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "dedi",
+                "verification-requests",
+                "%7B%7Bverification_request_id%7D%7D",
+                "reject"
+              ]
+            },
+            "description": "❌ REJECT VERIFICATION REQUEST\n\nReject a pending delegated domain-verification request."
           },
           "response": []
         }
@@ -2472,42 +2755,30 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"Status code is 200 or error\", function () {",
-                  "  pm.expect([200, 400, 401, 403, 404, 500]).to.include(pm.response.code);",
+                  "pm.test(\"Status code is 200, 400, 401, 403, 404, or 500\", function () {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200, 400, 401, 403, 404, 500]);",
                   "});",
-                  "",
-                  "pm.test(\"Response has message property\", function () {",
-                  "  const response = pm.response.json();",
+                  "const response = pm.response.json();",
+                  "pm.test(\"Response has message\", function () {",
                   "  pm.expect(response).to.have.property(\"message\");",
                   "});",
-                  "",
                   "if (pm.response.code === 200) {",
-                  "  const response = pm.response.json();",
-                  "  ",
-                  "  pm.test(\"Successful record update\", function () {",
-                  "    pm.expect(response.message).to.include(\"updated\");",
-                  "    pm.expect(response).to.have.property(\"data\");",
-                  "    if (response.data) {",
-                  "      pm.expect(response.data).to.have.property(\"digest\");",
-                  "    }",
+                  "  pm.test(\"Update success message is valid\", function () {",
+                  "    pm.expect(response.message).to.be.oneOf([\"Record edit successful\", \"Record updated\"]);",
                   "  });",
-                  "  ",
-                  "  // Store the digest if available",
                   "  if (response.data && response.data.digest) {",
                   "    pm.collectionVariables.set(\"record_digest\", response.data.digest);",
-                  "    console.log(\"✅ Record updated successfully with digest:\", response.data.digest);",
+                  "    console.log(\"✅ Live record updated with digest:\", response.data.digest);",
+                  "  } else {",
+                  "    console.log(\"✅ Draft record edited in place\");",
                   "  }",
                   "} else if (pm.response.code === 403) {",
                   "  pm.test(\"Authorization error\", function () {",
-                  "    const response = pm.response.json();",
                   "    pm.expect(response.message).to.include(\"privileges\");",
                   "  });",
                   "} else if (pm.response.code === 404) {",
-                  "  pm.test(\"Record not found or invalid state\", function () {",
-                  "    const response = pm.response.json();",
-                  "    pm.expect(response.message).to.satisfy((msg) => {",
-                  "      return msg.includes(\"not found\") || msg.includes(\"cannot be updated\");",
-                  "    });",
+                  "  pm.test(\"Record or registry state error\", function () {",
+                  "    pm.expect(response.message).to.satisfy((msg) => msg.includes(\"not found\") || msg.includes(\"live registry\"));",
                   "  });",
                   "}"
                 ]
@@ -2542,7 +2813,7 @@
                 "update-record"
               ]
             },
-            "description": "📝 UPDATE RECORD\n\nUpdate record properties like description, details, metadata, and TTL. Only published (live) records can be updated.\n\n**Authentication:** Required (Cookie or API Key)\n\n**Path Parameters:**\n- `namespace`: Namespace ID or domain\n- `registry_name`: Registry name containing the record\n- `record_name`: Name of the record to update\n\n**Request Body:**\n```json\n{\n  \"description\": \"updated description\",\n  \"details\": {\"updated\": \"data\"},\n  \"meta\": {\"key\": \"value\"},\n  \"valid_till\": \"2024-12-31T23:59:59Z\",\n  \"ttl\": 7200\n}\n```\n\n**Update Rules:**\n- At least details field must be provided\n- Record must be in 'draft' or 'live' state\n- Cannot update expired, revoked, or suspended records\n- User must have registry authorization\n- Schema validation applies if registry has schema\n\n**Response Scenarios:**\n- 200: Record updated successfully\n- 400: Invalid input (missing details, invalid meta)\n- 401: Authentication required\n- 403: Insufficient privileges\n- 404: Record/registry/namespace not found or invalid state\n- 500: Internal server error\n\n**Response Format:**\n```json\n{\n  \"message\": \"Record updated successfully\",\n  \"data\": {\"digest\": \"hash_value\"}\n}\n```\n\n**Important Notes:**\n- Updates create new version with incremented version_count\n- Original record is marked as invalid\n- Schema validation enforced if registry defines schema\n- Chain anchoring respects registry's fields_to_anchor settings"
+            "description": "📝 UPDATE RECORD\n\nUpdates the latest version of a record in a live registry.\n\n**Authentication:** Required (Cookie or API Key)\n\n**Path Parameters:**\n- `namespace`: Namespace ID or verified domain\n- `registry_name`: Registry containing the record\n- `record_name`: Record name to update\n\n**Request Body:**\n```json\n{\n  \"description\": \"updated description\",\n  \"details\": {\"updated\": \"data\"},\n  \"meta\": {\"key\": \"value\"},\n  \"valid_till\": \"2026-12-31T23:59:59Z\",\n  \"ttl\": 7200\n}\n```\n\n**Update Rules:**\n- `details` is required\n- The parent registry must be in `live` state\n- Draft records are edited in place\n- Live records create a new version and return the updated digest\n- Record data must satisfy the registry schema when a schema is configured\n\n**Success Response (200) for a draft record:**\n```json\n{\n  \"message\": \"Record edit successful\"\n}\n```\n\n**Success Response (200) for a live record:**\n```json\n{\n  \"message\": \"Record updated\",\n  \"data\": {\n    \"digest\": \"0xabc123...\"\n  }\n}\n```"
           },
           "response": []
         }
@@ -2552,39 +2823,22 @@
       "name": "state management",
       "item": [
         {
-          "name": "revoke registry",
+          "name": "Inactivate registry",
           "event": [
-            {
-              "listen": "prerequest",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "// ✅ Authentication is handled automatically by the global collection script"
-                ]
-              }
-            },
             {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"Status code is 200 or error\", function () {",
-                  "  pm.expect([200, 400, 401, 403, 404, 500]).to.include(pm.response.code);",
+                  "pm.test(\"Status code is one of 200, 400, 401, 403, 404, 409, 500\", function () {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200, 400, 401, 403, 404, 409, 500]);",
                   "});",
-                  "",
-                  "if (pm.response.code === 200) {",
-                  "  const res = pm.response.json();",
-                  "  pm.expect(res).to.have.property(\"message\");",
-                  "  pm.expect(res.message).to.equal(\"Regsitry has been revoked\");",
-                  "  console.log(\"✅ Registry revoked successfully\");",
-                  "} else if (pm.response.code === 400) {",
-                  "  console.log(\"⚠️ Bad request - check required parameters\");",
-                  "} else if (pm.response.code === 401) {",
-                  "  console.log(\"🔐 Authentication required\");",
-                  "} else if (pm.response.code === 403) {",
-                  "  console.log(\"🚫 Insufficient privileges\");",
-                  "} else if (pm.response.code === 404) {",
-                  "  console.log(\"📁 Registry not found or already revoked\");",
+                  "const contentType = pm.response.headers.get(\"Content-Type\") || \"\";",
+                  "if (contentType.includes(\"application/json\")) {",
+                  "  const response = pm.response.json();",
+                  "  pm.test(\"Response has message\", function () {",
+                  "    pm.expect(response).to.have.property(\"message\");",
+                  "  });",
                   "}"
                 ]
               }
@@ -2597,55 +2851,38 @@
             "method": "POST",
             "header": [],
             "url": {
-              "raw": "{{url}}/dedi/{{namespace}}/{{registry_name}}/revoke-registry",
+              "raw": "{{url}}/dedi/{{namespace}}/{{registry_name}}/inactivate-registry",
               "host": [
                 "{{url}}"
               ],
               "path": [
                 "dedi",
-                "{{namespace}}",
-                "{{registry_name}}",
-                "revoke-registry"
+                "%7B%7Bnamespace%7D%7D",
+                "%7B%7Bregistry_name%7D%7D",
+                "inactivate-registry"
               ]
             },
-            "description": "🚫 REVOKE REGISTRY\n\nPermanently revokes a registry, making it inactive and preventing any new records from being created.\n\n**Authentication:** Required (Cookie or API Key)\n\n**Path Parameters:**\n- `namespace`: Namespace ID or domain\n- `registry_name`: Registry name to revoke\n\n**Prerequisites:**\n- User must have authorization to the registry\n- Registry must not be already revoked\n- Registry must not be archived\n\n**Response (200):**\n```json\n{\n  \"message\": \"Regsitry has been revoked\"\n}\n```\n\n**Error Cases:**\n- **404**: Registry not found or already revoked\n- **403**: Insufficient privileges\n- **400**: Missing required parameters\n\n**Important:** This action is permanent and cannot be undone. Use reinstate if you need to temporarily disable a registry."
+            "description": "⏸️ INACTIVATE REGISTRY\n\nCreate a new registry version in the `inactive` state."
           },
           "response": []
         },
         {
-          "name": "suspend registry",
+          "name": "Reactivate registry",
           "event": [
-            {
-              "listen": "prerequest",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "// ✅ Authentication is handled automatically by the global collection script"
-                ]
-              }
-            },
             {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"Status code is 200 or error\", function () {",
-                  "  pm.expect([200, 400, 401, 403, 404, 500]).to.include(pm.response.code);",
+                  "pm.test(\"Status code is one of 200, 400, 401, 403, 404, 409, 500\", function () {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200, 400, 401, 403, 404, 409, 500]);",
                   "});",
-                  "",
-                  "if (pm.response.code === 200) {",
-                  "  const res = pm.response.json();",
-                  "  pm.expect(res).to.have.property(\"message\");",
-                  "  pm.expect(res.message).to.equal(\"Registry has been suspended\");",
-                  "  console.log(\"✅ Registry suspended successfully\");",
-                  "} else if (pm.response.code === 400) {",
-                  "  console.log(\"⚠️ Bad request - check required parameters\");",
-                  "} else if (pm.response.code === 401) {",
-                  "  console.log(\"🔐 Authentication required\");",
-                  "} else if (pm.response.code === 403) {",
-                  "  console.log(\"🚫 Insufficient privileges\");",
-                  "} else if (pm.response.code === 404) {",
-                  "  console.log(\"📁 Registry not found or already suspended\");",
+                  "const contentType = pm.response.headers.get(\"Content-Type\") || \"\";",
+                  "if (contentType.includes(\"application/json\")) {",
+                  "  const response = pm.response.json();",
+                  "  pm.test(\"Response has message\", function () {",
+                  "    pm.expect(response).to.have.property(\"message\");",
+                  "  });",
                   "}"
                 ]
               }
@@ -2658,55 +2895,38 @@
             "method": "POST",
             "header": [],
             "url": {
-              "raw": "{{url}}/dedi/{{namespace}}/{{registry_name}}/suspend-registry",
+              "raw": "{{url}}/dedi/{{namespace}}/{{registry_name}}/reactivate-registry",
               "host": [
                 "{{url}}"
               ],
               "path": [
                 "dedi",
-                "{{namespace}}",
-                "{{registry_name}}",
-                "suspend-registry"
+                "%7B%7Bnamespace%7D%7D",
+                "%7B%7Bregistry_name%7D%7D",
+                "reactivate-registry"
               ]
             },
-            "description": "⏸️ SUSPEND REGISTRY\n\nTemporarily suspends a registry, disabling it without permanent revocation. Suspended registries cannot accept new records but can be reinstated later.\n\n**Authentication:** Required (Cookie or API Key)\n\n**Path Parameters:**\n- `namespace`: Namespace ID or domain\n- `registry_name`: Registry name to suspend\n\n**Prerequisites:**\n- User must have authorization to the registry\n- Registry must not be already suspended, revoked, or archived\n- Registry must be in active state\n\n**Response (200):**\n```json\n{\n  \"message\": \"Registry has been suspended\"\n}\n```\n\n**Error Cases:**\n- **404**: Registry not found or already suspended\n- **403**: Insufficient privileges\n- **400**: Missing required parameters\n\n**Use Cases:**\n- Temporarily disable registry during maintenance\n- Pause registry operations without permanent revocation\n- Quick response to security concerns\n- Administrative control over registry availability\n\n**Difference from Revoke:**\n- Suspend is temporary and reversible\n- Revoke is permanent and cannot be undone\n- Suspended registries can be reinstated\n- Revoked registries require special reinstatement process"
+            "description": "▶️ REACTIVATE REGISTRY\n\nCreate a new registry version in the `live` state."
           },
           "response": []
         },
         {
-          "name": "reinstate registry",
+          "name": "Delete namespace",
           "event": [
-            {
-              "listen": "prerequest",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "// ✅ Authentication is handled automatically by the global collection script"
-                ]
-              }
-            },
             {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"Status code is 200 or error\", function () {",
-                  "  pm.expect([200, 400, 401, 403, 404, 500]).to.include(pm.response.code);",
+                  "pm.test(\"Status code is one of 200, 400, 401, 403, 404, 409, 500\", function () {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200, 400, 401, 403, 404, 409, 500]);",
                   "});",
-                  "",
-                  "if (pm.response.code === 200) {",
-                  "  const res = pm.response.json();",
-                  "  pm.expect(res).to.have.property(\"message\");",
-                  "  pm.expect(res.message).to.equal(\"Registry has been reinstated\");",
-                  "  console.log(\"✅ Registry reinstated successfully\");",
-                  "} else if (pm.response.code === 400) {",
-                  "  console.log(\"⚠️ Bad request - check required parameters\");",
-                  "} else if (pm.response.code === 401) {",
-                  "  console.log(\"🔐 Authentication required\");",
-                  "} else if (pm.response.code === 403) {",
-                  "  console.log(\"🚫 Insufficient privileges\");",
-                  "} else if (pm.response.code === 404) {",
-                  "  console.log(\"📁 Registry not found or not revoked\");",
+                  "const contentType = pm.response.headers.get(\"Content-Type\") || \"\";",
+                  "if (contentType.includes(\"application/json\")) {",
+                  "  const response = pm.response.json();",
+                  "  pm.test(\"Response has message\", function () {",
+                  "    pm.expect(response).to.have.property(\"message\");",
+                  "  });",
                   "}"
                 ]
               }
@@ -2716,58 +2936,49 @@
             "auth": {
               "type": "noauth"
             },
-            "method": "POST",
+            "method": "DELETE",
             "header": [],
             "url": {
-              "raw": "{{url}}/dedi/{{namespace}}/{{registry_name}}/reinstate-registry",
+              "raw": "{{url}}/dedi/{{namespace}}/delete-namespace",
               "host": [
                 "{{url}}"
               ],
               "path": [
                 "dedi",
-                "{{namespace}}",
-                "{{registry_name}}",
-                "reinstate-registry"
+                "%7B%7Bnamespace%7D%7D",
+                "delete-namespace"
               ]
             },
-            "description": "♻️ REINSTATE REGISTRY\n\nReinstates a previously revoked registry, making it active again for new record creation.\n\n**Authentication:** Required (Cookie or API Key)\n\n**Path Parameters:**\n- `namespace`: Namespace ID or domain\n- `registry_name`: Registry name to reinstate\n\n**Prerequisites:**\n- User must have authorization to the registry\n- Registry must be currently revoked\n- Registry must not be archived\n\n**Response (200):**\n```json\n{\n  \"message\": \"Registry has been reinstated\"\n}\n```\n\n**Error Cases:**\n- **404**: Registry not found or not in revoked state\n- **403**: Insufficient privileges\n- **400**: Missing required parameters\n\n**Use Cases:**\n- Reactivating temporarily disabled registries\n- Restoring accidentally revoked registries\n- Managing registry lifecycle"
+            "description": "🗑️ DELETE NAMESPACE\n\nDelete a namespace and move its recoverable history into the deleted-entity recovery surface.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"{{delete_reason}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
           },
           "response": []
         },
         {
-          "name": "suspend record",
+          "name": "Delete registry",
           "event": [
-            {
-              "listen": "prerequest",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "// ✅ Authentication is handled automatically by the global collection script"
-                ]
-              }
-            },
             {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"Status code is 200 or error\", function () {",
-                  "  pm.expect([200, 400, 401, 403, 404, 500]).to.include(pm.response.code);",
+                  "pm.test(\"Status code is one of 200, 400, 401, 403, 404, 409, 500\", function () {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200, 400, 401, 403, 404, 409, 500]);",
                   "});",
-                  "",
-                  "if (pm.response.code === 200) {",
-                  "  const res = pm.response.json();",
-                  "  pm.expect(res).to.have.property(\"message\");",
-                  "  pm.expect(res.message).to.equal(\"Record has been suspended\");",
-                  "  console.log(\"✅ Record suspended successfully\");",
-                  "} else if (pm.response.code === 400) {",
-                  "  console.log(\"⚠️ Bad request - check required parameters\");",
-                  "} else if (pm.response.code === 401) {",
-                  "  console.log(\"🔐 Authentication required\");",
-                  "} else if (pm.response.code === 403) {",
-                  "  console.log(\"🚫 Insufficient privileges\");",
-                  "} else if (pm.response.code === 404) {",
-                  "  console.log(\"📁 Record not found or cannot be suspended (revoked/expired)\");",
+                  "const contentType = pm.response.headers.get(\"Content-Type\") || \"\";",
+                  "if (contentType.includes(\"application/json\")) {",
+                  "  const response = pm.response.json();",
+                  "  pm.test(\"Response has message\", function () {",
+                  "    pm.expect(response).to.have.property(\"message\");",
+                  "  });",
                   "}"
                 ]
               }
@@ -2777,59 +2988,50 @@
             "auth": {
               "type": "noauth"
             },
-            "method": "POST",
+            "method": "DELETE",
             "header": [],
             "url": {
-              "raw": "{{url}}/dedi/{{namespace}}/{{registry_name}}/{{record_name}}/suspend-record",
+              "raw": "{{url}}/dedi/{{namespace}}/{{registry_name}}/delete-registry",
               "host": [
                 "{{url}}"
               ],
               "path": [
                 "dedi",
-                "{{namespace}}",
-                "{{registry_name}}",
-                "{{record_name}}",
-                "suspend-record"
+                "%7B%7Bnamespace%7D%7D",
+                "%7B%7Bregistry_name%7D%7D",
+                "delete-registry"
               ]
             },
-            "description": "⏸️ SUSPEND RECORD\n\nTemporarily suspends a record, making it inactive while preserving its data for potential reinstatement.\n\n**Authentication:** Required (Cookie or API Key)\n\n**Path Parameters:**\n- `namespace`: Namespace ID or domain\n- `registry_name`: Registry name containing the record\n- `record_name`: Record name to suspend\n\n**Prerequisites:**\n- User must have authorization to the registry\n- Record must exist and be in 'live' state\n- Record must not be revoked or expired\n\n**Response (200):**\n```json\n{\n  \"message\": \"Record has been suspended\"\n}\n```\n\n**Error Cases:**\n- **404**: Record not found or cannot be suspended\n- **403**: Insufficient privileges\n- **400**: Missing required parameters\n\n**Use Cases:**\n- Temporarily disabling records under investigation\n- Compliance-related record suspension\n- Managing record lifecycle states\n\n**Note:** Suspended records can be reinstated. This action is reversible."
+            "description": "🗑️ DELETE REGISTRY\n\nDelete a registry and move its recoverable history into the deleted-entity recovery surface.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"{{delete_reason}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
           },
           "response": []
         },
         {
-          "name": "reinstate record",
+          "name": "Delete records",
           "event": [
-            {
-              "listen": "prerequest",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "// ✅ Authentication is handled automatically by the global collection script"
-                ]
-              }
-            },
             {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"Status code is 200 or error\", function () {",
-                  "  pm.expect([200, 400, 401, 403, 404, 500]).to.include(pm.response.code);",
+                  "pm.test(\"Status code is one of 200, 400, 401, 403, 404, 409, 500\", function () {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200, 400, 401, 403, 404, 409, 500]);",
                   "});",
-                  "",
-                  "if (pm.response.code === 200) {",
-                  "  const res = pm.response.json();",
-                  "  pm.expect(res).to.have.property(\"message\");",
-                  "  pm.expect(res.message).to.equal(\"Record has been reinstated\");",
-                  "  console.log(\"✅ Record reinstated successfully\");",
-                  "} else if (pm.response.code === 400) {",
-                  "  console.log(\"⚠️ Bad request - check required parameters\");",
-                  "} else if (pm.response.code === 401) {",
-                  "  console.log(\"🔐 Authentication required\");",
-                  "} else if (pm.response.code === 403) {",
-                  "  console.log(\"🚫 Insufficient privileges\");",
-                  "} else if (pm.response.code === 404) {",
-                  "  console.log(\"📁 Record not found, already active, or cannot be reinstated (revoked/expired)\");",
+                  "const contentType = pm.response.headers.get(\"Content-Type\") || \"\";",
+                  "if (contentType.includes(\"application/json\")) {",
+                  "  const response = pm.response.json();",
+                  "  pm.test(\"Response has message\", function () {",
+                  "    pm.expect(response).to.have.property(\"message\");",
+                  "  });",
                   "}"
                 ]
               }
@@ -2839,59 +3041,179 @@
             "auth": {
               "type": "noauth"
             },
-            "method": "POST",
+            "method": "DELETE",
             "header": [],
             "url": {
-              "raw": "{{url}}/dedi/{{namespace}}/{{registry_name}}/{{record_name}}/reinstate-record",
+              "raw": "{{url}}/dedi/{{namespace}}/{{registry_name}}/delete-records",
               "host": [
                 "{{url}}"
               ],
               "path": [
                 "dedi",
-                "{{namespace}}",
-                "{{registry_name}}",
-                "{{record_name}}",
-                "reinstate-record"
+                "%7B%7Bnamespace%7D%7D",
+                "%7B%7Bregistry_name%7D%7D",
+                "delete-records"
               ]
             },
-            "description": "♻️ REINSTATE RECORD\n\nReinstates a previously suspended record, making it active and available for queries again.\n\n**Authentication:** Required (Cookie or API Key)\n\n**Path Parameters:**\n- `namespace`: Namespace ID or domain\n- `registry_name`: Registry name containing the record\n- `record_name`: Record name to reinstate\n\n**Prerequisites:**\n- User must have authorization to the registry\n- Record must exist and be in 'suspended' state\n- Record must not be revoked or expired\n\n**Response (200):**\n```json\n{\n  \"message\": \"Record has been reinstated\"\n}\n```\n\n**Error Cases:**\n- **404**: Record not found, already active, or cannot be reinstated\n- **403**: Insufficient privileges\n- **400**: Missing required parameters\n\n**Use Cases:**\n- Reactivating suspended records after review\n- Restoring accidentally suspended records\n- Managing record compliance workflows\n\n**Note:** Only suspended records can be reinstated. Revoked and expired records cannot be restored."
+            "description": "🗑️ DELETE RECORDS\n\nDelete one or more records and move their recoverable history into the deleted-entity recovery surface.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"records\": [\"{{record_name}}\"],\n  \"reason\": \"{{delete_reason}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
           },
           "response": []
         },
         {
-          "name": "revoke record",
+          "name": "Get deleted namespaces",
           "event": [
-            {
-              "listen": "prerequest",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "// ✅ Authentication is handled automatically by the global collection script"
-                ]
-              }
-            },
             {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"Status code is 200 or error\", function () {",
-                  "  pm.expect([200, 400, 401, 403, 404, 500]).to.include(pm.response.code);",
+                  "pm.test(\"Status code is one of 200, 400, 401, 403, 404, 409, 500\", function () {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200, 400, 401, 403, 404, 409, 500]);",
                   "});",
-                  "",
-                  "if (pm.response.code === 200) {",
-                  "  const res = pm.response.json();",
-                  "  pm.expect(res).to.have.property(\"message\");",
-                  "  pm.expect(res.message).to.equal(\"Record has been revoked\");",
-                  "  console.log(\"✅ Record revoked successfully\");",
-                  "} else if (pm.response.code === 400) {",
-                  "  console.log(\"⚠️ Bad request - check required parameters\");",
-                  "} else if (pm.response.code === 401) {",
-                  "  console.log(\"🔐 Authentication required\");",
-                  "} else if (pm.response.code === 403) {",
-                  "  console.log(\"🚫 Insufficient privileges\");",
-                  "} else if (pm.response.code === 404) {",
-                  "  console.log(\"📁 Record not found or cannot be revoked (already expired)\");",
+                  "const contentType = pm.response.headers.get(\"Content-Type\") || \"\";",
+                  "if (contentType.includes(\"application/json\")) {",
+                  "  const response = pm.response.json();",
+                  "  pm.test(\"Response has message\", function () {",
+                  "    pm.expect(response).to.have.property(\"message\");",
+                  "  });",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{url}}/dedi/deleted/namespaces",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "dedi",
+                "deleted",
+                "namespaces"
+              ]
+            },
+            "description": "📚 GET DELETED NAMESPACES\n\nList deleted namespaces that are still within the restore window."
+          },
+          "response": []
+        },
+        {
+          "name": "Get deleted registries",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is one of 200, 400, 401, 403, 404, 409, 500\", function () {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200, 400, 401, 403, 404, 409, 500]);",
+                  "});",
+                  "const contentType = pm.response.headers.get(\"Content-Type\") || \"\";",
+                  "if (contentType.includes(\"application/json\")) {",
+                  "  const response = pm.response.json();",
+                  "  pm.test(\"Response has message\", function () {",
+                  "    pm.expect(response).to.have.property(\"message\");",
+                  "  });",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{url}}/dedi/deleted/registries",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "dedi",
+                "deleted",
+                "registries"
+              ]
+            },
+            "description": "📚 GET DELETED REGISTRIES\n\nList deleted registries that are still within the restore window."
+          },
+          "response": []
+        },
+        {
+          "name": "Get deleted records",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is one of 200, 400, 401, 403, 404, 409, 500\", function () {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200, 400, 401, 403, 404, 409, 500]);",
+                  "});",
+                  "const contentType = pm.response.headers.get(\"Content-Type\") || \"\";",
+                  "if (contentType.includes(\"application/json\")) {",
+                  "  const response = pm.response.json();",
+                  "  pm.test(\"Response has message\", function () {",
+                  "    pm.expect(response).to.have.property(\"message\");",
+                  "  });",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{url}}/dedi/deleted/records",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "dedi",
+                "deleted",
+                "records"
+              ]
+            },
+            "description": "📚 GET DELETED RECORDS\n\nList deleted records that are still within the restore window."
+          },
+          "response": []
+        },
+        {
+          "name": "Restore namespace",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is one of 200, 400, 401, 403, 404, 409, 500\", function () {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200, 400, 401, 403, 404, 409, 500]);",
+                  "});",
+                  "const contentType = pm.response.headers.get(\"Content-Type\") || \"\";",
+                  "if (contentType.includes(\"application/json\")) {",
+                  "  const response = pm.response.json();",
+                  "  pm.test(\"Response has message\", function () {",
+                  "    pm.expect(response).to.have.property(\"message\");",
+                  "  });",
                   "}"
                 ]
               }
@@ -2904,19 +3226,130 @@
             "method": "POST",
             "header": [],
             "url": {
-              "raw": "{{url}}/dedi/{{namespace}}/{{registry_name}}/{{record_name}}/revoke-record",
+              "raw": "{{url}}/dedi/restore/namespace",
               "host": [
                 "{{url}}"
               ],
               "path": [
                 "dedi",
-                "{{namespace}}",
-                "{{registry_name}}",
-                "{{record_name}}",
-                "revoke-record"
+                "restore",
+                "namespace"
               ]
             },
-            "description": "🚫 REVOKE RECORD\n\nPermanently revokes a record, making it invalid and preventing any future use. This action is irreversible.\n\n**Authentication:** Required (Cookie or API Key)\n\n**Path Parameters:**\n- `namespace`: Namespace ID or domain\n- `registry_name`: Registry name containing the record\n- `record_name`: Record name to revoke\n\n**Prerequisites:**\n- User must have authorization to the registry\n- Record must exist and not be already expired\n\n**Response (200):**\n```json\n{\n  \"message\": \"Record has been revoked\"\n}\n```\n\n**Error Cases:**\n- **404**: Record not found or already expired\n- **403**: Insufficient privileges\n- **400**: Missing required parameters\n\n**Use Cases:**\n- Invalidating compromised records\n- Compliance-related record revocation\n- Permanent record invalidation\n\n**Important:** This action is permanent and cannot be undone. Revoked records cannot be reinstated."
+            "description": "♻️ RESTORE NAMESPACE\n\nRestore a deleted namespace during the retention window.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"namespace_id\": \"{{namespace}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Restore registry",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is one of 200, 400, 401, 403, 404, 409, 500\", function () {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200, 400, 401, 403, 404, 409, 500]);",
+                  "});",
+                  "const contentType = pm.response.headers.get(\"Content-Type\") || \"\";",
+                  "if (contentType.includes(\"application/json\")) {",
+                  "  const response = pm.response.json();",
+                  "  pm.test(\"Response has message\", function () {",
+                  "    pm.expect(response).to.have.property(\"message\");",
+                  "  });",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{url}}/dedi/restore/registry",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "dedi",
+                "restore",
+                "registry"
+              ]
+            },
+            "description": "♻️ RESTORE REGISTRY\n\nRestore a deleted registry during the retention window. Provide `deleted_history_id` when multiple deleted histories exist for the same name.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"namespace_id\": \"{{namespace}}\",\n  \"registry_name\": \"{{registry_name}}\",\n  \"deleted_history_id\": \"{{deleted_history_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Restore records",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is one of 200, 400, 401, 403, 404, 409, 500\", function () {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200, 400, 401, 403, 404, 409, 500]);",
+                  "});",
+                  "const contentType = pm.response.headers.get(\"Content-Type\") || \"\";",
+                  "if (contentType.includes(\"application/json\")) {",
+                  "  const response = pm.response.json();",
+                  "  pm.test(\"Response has message\", function () {",
+                  "    pm.expect(response).to.have.property(\"message\");",
+                  "  });",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{url}}/dedi/restore/records",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "dedi",
+                "restore",
+                "records"
+              ]
+            },
+            "description": "♻️ RESTORE RECORDS\n\nRestore deleted records during the retention window. Provide `deleted_history_id` when multiple deleted histories exist for the same name.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"records\": [\n    {\n      \"namespace_id\": \"{{namespace}}\",\n      \"registry_name\": \"{{registry_name}}\",\n      \"record_name\": \"{{record_name}}\",\n      \"deleted_history_id\": \"{{deleted_history_id}}\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
           },
           "response": []
         }
@@ -2954,83 +3387,19 @@
                     "exec": [
                       "// 🧪 NAMESPACE LOOKUP VALIDATION",
                       "pm.test(\"✅ Status code is valid\", function () {",
-                      "    pm.expect([200, 400, 401, 404, 500]).to.include(pm.response.code);",
+                      "    pm.expect([200, 400, 404, 500]).to.include(pm.response.code);",
                       "});",
                       "",
                       "const responseJson = pm.response.json();",
                       "pm.test(\"📄 Response has required structure\", function () {",
-                      "    pm.expect(responseJson).to.have.property('message');",
-                      "    if (pm.response.code === 200) {",
-                      "        pm.expect(responseJson).to.have.property('data');",
-                      "    }",
+                      "    pm.expect(responseJson).to.have.property(\"message\");",
+                      "    if (pm.response.code === 200) pm.expect(responseJson).to.have.property(\"data\");",
                       "});",
                       "",
-                      "// ✅ SUCCESS CASE (200)",
                       "if (pm.response.code === 200) {",
-                      "    pm.test(\"🎯 Success message is correct\", function () {",
-                      "        pm.expect(responseJson.message).to.equal('Namespace details retrieved successfully');",
-                      "    });",
-                      "    ",
                       "    const data = responseJson.data;",
                       "    pm.test(\"🗂️ Data has required namespace fields\", function () {",
-                      "        pm.expect(data).to.have.property('name');",
-                      "        pm.expect(data).to.have.property('namespace_id');",
-                      "        pm.expect(data).to.have.property('digest');",
-                      "        pm.expect(data).to.have.property('description');",
-                      "        pm.expect(data).to.have.property('created_by');",
-                      "        pm.expect(data).to.have.property('genesis');",
-                      "        pm.expect(data).to.have.property('created_at');",
-                      "        pm.expect(data).to.have.property('updated_at');",
-                      "        pm.expect(data).to.have.property('version_count');",
-                      "        pm.expect(data).to.have.property('version');",
-                      "        pm.expect(data).to.have.property('registry_count');",
-                      "        pm.expect(data).to.have.property('ttl');",
-                      "    });",
-                      "    ",
-                      "    pm.test(\"🔢 Data types are correct\", function () {",
-                      "        pm.expect(typeof data.name).to.equal('string');",
-                      "        pm.expect(typeof data.namespace_id).to.equal('string');",
-                      "        pm.expect(typeof data.digest).to.equal('string');",
-                      "        pm.expect(typeof data.description).to.equal('string');",
-                      "        pm.expect(typeof data.created_by).to.equal('string');",
-                      "        pm.expect(typeof data.version_count).to.equal('number');",
-                      "        pm.expect(typeof data.registry_count).to.equal('number');",
-                      "        pm.expect(typeof data.ttl).to.equal('number');",
-                      "    });",
-                      "    ",
-                      "    // Store for chaining",
-                      "    pm.collectionVariables.set('namespace_id', data.namespace_id);",
-                      "    console.log('✅ Namespace lookup successful:', data.namespace_id);",
-                      "}",
-                      "",
-                      "// ❌ ERROR CASES",
-                      "else if (pm.response.code === 400) {",
-                      "    pm.test(\"⚠️ Bad request has appropriate message\", function () {",
-                      "        pm.expect(responseJson.message).to.be.oneOf([",
-                      "            'Invalid input: namespace is missing or empty',",
-                      "            'Invalid input: as_on date format is invalid'",
-                      "        ]);",
-                      "    });",
-                      "}",
-                      "else if (pm.response.code === 401) {",
-                      "    pm.test(\"🔒 Unauthorized error message\", function () {",
-                      "        pm.expect(responseJson.message).to.include('Unauthorized');",
-                      "    });",
-                      "}",
-                      "else if (pm.response.code === 404) {",
-                      "    pm.test(\"🔍 Not found error message\", function () {",
-                      "        pm.expect(responseJson.message).to.be.oneOf([",
-                      "            'Namespace not found',",
-                      "            'User not found'",
-                      "        ]);",
-                      "    });",
-                      "}",
-                      "else if (pm.response.code === 500) {",
-                      "    pm.test(\"💥 Server error message\", function () {",
-                      "        pm.expect(responseJson.message).to.be.oneOf([",
-                      "            'Database query failed',",
-                      "            'An unexpected error occurred while retrieving namespace details'",
-                      "        ]);",
+                      "        [\"name\",\"namespace_id\",\"digest\",\"description\",\"created_by\",\"genesis\",\"state\",\"created_at\",\"updated_at\",\"version\",\"version_count\",\"is_verified\",\"meta\",\"registry_count\",\"ttl\",\"proof\"].forEach((key) => pm.expect(data).to.have.property(key));",
                       "    });",
                       "}"
                     ]
@@ -3068,7 +3437,7 @@
                     }
                   ]
                 },
-                "description": "🔍 NAMESPACE LOOKUP\n\nRetrieve detailed information about a specific namespace.\n\n**Authentication:** Required (Cookie or API Key)\n\n**Path Parameters:**\n- `namespace`: Namespace ID or domain to lookup\n\n**Query Parameters (Optional):**\n- `version_id`: Specific version to retrieve\n- `as_on`: Historical lookup date (YYYY-MM-DD)\n\n**Success Response (200):**\n```json\n{\n  \"message\": \"Namespace details retrieved successfully\",\n  \"data\": {\n    \"name\": \"namespace-name\",\n    \"namespace_id\": \"ns_123...\",\n    \"domain\": \"example.com\",\n    \"digest\": \"0x123...\",\n    \"description\": \"Namespace description\",\n    \"created_by\": \"profile_id\",\n    \"genesis\": \"0x456...\",\n    \"created_at\": \"2024-01-01T00:00:00Z\",\n    \"updated_at\": \"2024-01-01T00:00:00Z\",\n    \"version_count\": 5,\n    \"version\": \"0x789...\",\n    \"meta\": {},\n    \"registry_count\": 10,\n    \"ttl\": 3600,\n    \"is_verified\": true\n  }\n}\n```\n\n**Error Cases:**\n- **400**: Invalid input (missing namespace or invalid date)\n- **401**: Unauthorized (invalid token)\n- **404**: Namespace not found or user not found\n- **500**: Database error or internal server error\n\n**Use Cases:**\n- Retrieve namespace metadata\n- Verify namespace existence\n- Get namespace configuration details"
+                "description": "🔍 NAMESPACE LOOKUP\n\nRetrieve detailed information about a specific namespace.\n\n**Authentication:** Not required\n\n**Path Parameters:**\n- `namespace`: Namespace ID or domain to lookup\n\n**Query Parameters (Optional):**\n- `version_id`: Specific version to retrieve\n- `as_on`: Historical lookup date (YYYY-MM-DD)\n\n**Success Response (200):**\n```json\n{\n  \"message\": \"Namespace details retrieved successfully\",\n  \"data\": {\n    \"name\": \"namespace-name\",\n    \"namespace_id\": \"ns_123...\",\n    \"domain\": \"example.com\",\n    \"digest\": \"0x123...\",\n    \"description\": \"Namespace description\",\n    \"created_by\": \"profile_id\",\n    \"genesis\": \"0x456...\",\n    \"created_at\": \"2024-01-01T00:00:00Z\",\n    \"updated_at\": \"2024-01-01T00:00:00Z\",\n    \"version_count\": 5,\n    \"version\": \"0x789...\",\n    \"meta\": {},\n    \"registry_count\": 10,\n    \"ttl\": 3600,\n    \"is_verified\": true\n  }\n}\n```\n\n**Error Cases:**\n- **400**: Invalid input (missing namespace or invalid date)\n- **401**: Unauthorized (invalid token)\n- **404**: Namespace not found or user not found\n- **500**: Database error or internal server error\n\n**Use Cases:**\n- Retrieve namespace metadata\n- Verify namespace existence\n- Get namespace configuration details"
               },
               "response": []
             },
@@ -3102,90 +3471,22 @@
                     "exec": [
                       "// 🧪 REGISTRY LOOKUP VALIDATION",
                       "pm.test(\"✅ Status code is valid\", function () {",
-                      "    pm.expect([200, 400, 401, 404, 500]).to.include(pm.response.code);",
+                      "    pm.expect([200, 400, 404, 500]).to.include(pm.response.code);",
                       "});",
                       "",
                       "const responseJson = pm.response.json();",
                       "pm.test(\"📄 Response has required structure\", function () {",
-                      "    pm.expect(responseJson).to.have.property('message');",
-                      "    if (pm.response.code === 200) {",
-                      "        pm.expect(responseJson).to.have.property('data');",
-                      "    }",
+                      "    pm.expect(responseJson).to.have.property(\"message\");",
+                      "    if (pm.response.code === 200) pm.expect(responseJson).to.have.property(\"data\");",
                       "});",
                       "",
-                      "// ✅ SUCCESS CASE (200)",
                       "if (pm.response.code === 200) {",
-                      "    pm.test(\"🎯 Success message is correct\", function () {",
-                      "        pm.expect(responseJson.message).to.equal('Resource retrieved successfully');",
-                      "    });",
-                      "    ",
                       "    const data = responseJson.data;",
                       "    pm.test(\"🗂️ Data has required registry fields\", function () {",
-                      "        pm.expect(data).to.have.property('namespace');",
-                      "        pm.expect(data).to.have.property('namespace_id');",
-                      "        pm.expect(data).to.have.property('registry_id');",
-                      "        pm.expect(data).to.have.property('registry_name');",
-                      "        pm.expect(data).to.have.property('digest');",
-                      "        pm.expect(data).to.have.property('description');",
-                      "        pm.expect(data).to.have.property('created_by');",
-                      "        pm.expect(data).to.have.property('schema');",
-                      "        pm.expect(data).to.have.property('genesis');",
-                      "        pm.expect(data).to.have.property('created_at');",
-                      "        pm.expect(data).to.have.property('updated_at');",
-                      "        pm.expect(data).to.have.property('version_count');",
-                      "        pm.expect(data).to.have.property('version');",
-                      "        pm.expect(data).to.have.property('record_count');",
-                      "        pm.expect(data).to.have.property('query_allowed');",
-                      "        pm.expect(data).to.have.property('ttl');",
+                      "        [\"namespace\",\"namespace_id\",\"registry_id\",\"registry_name\",\"digest\",\"description\",\"created_by\",\"schema\",\"genesis\",\"created_at\",\"updated_at\",\"state\",\"meta\",\"record_count\",\"version_count\",\"version\",\"query_allowed\",\"ttl\",\"proof\"].forEach((key) => pm.expect(data).to.have.property(key));",
                       "    });",
-                      "    ",
-                      "    pm.test(\"🔢 Data types are correct\", function () {",
-                      "        pm.expect(typeof data.namespace).to.equal('string');",
-                      "        pm.expect(typeof data.namespace_id).to.equal('string');",
-                      "        pm.expect(typeof data.registry_id).to.equal('string');",
-                      "        pm.expect(typeof data.registry_name).to.equal('string');",
-                      "        pm.expect(typeof data.digest).to.equal('string');",
-                      "        pm.expect(typeof data.description).to.equal('string');",
-                      "        pm.expect(typeof data.created_by).to.equal('string');",
-                      "        pm.expect(typeof data.version_count).to.equal('number');",
-                      "        pm.expect(typeof data.record_count).to.equal('number');",
-                      "        pm.expect(typeof data.query_allowed).to.equal('boolean');",
-                      "        pm.expect(typeof data.ttl).to.equal('number');",
-                      "    });",
-                      "    ",
-                      "    // Store for chaining",
-                      "    pm.collectionVariables.set('registry_id', data.registry_id);",
-                      "    console.log('✅ Registry lookup successful:', data.registry_id);",
-                      "}",
-                      "",
-                      "// ❌ ERROR CASES",
-                      "else if (pm.response.code === 400) {",
-                      "    pm.test(\"⚠️ Bad request has appropriate message\", function () {",
-                      "        pm.expect(responseJson.message).to.be.oneOf([",
-                      "            'Namespace is missing',",
-                      "            'Registry name is missing',",
-                      "            'Invalid JWT token'",
-                      "        ]);",
-                      "    });",
-                      "}",
-                      "else if (pm.response.code === 401) {",
-                      "    pm.test(\"🔒 Unauthorized error message\", function () {",
-                      "        pm.expect(responseJson.message).to.include('Unauthorized');",
-                      "    });",
-                      "}",
-                      "else if (pm.response.code === 404) {",
-                      "    pm.test(\"🔍 Not found error message\", function () {",
-                      "        pm.expect(responseJson.message).to.be.oneOf([",
-                      "            'Namespace not found',",
-                      "            'Registry not found',",
-                      "            'User not found'",
-                      "        ]);",
-                      "    });",
-                      "}",
-                      "else if (pm.response.code === 500) {",
-                      "    pm.test(\"💥 Server error message\", function () {",
-                      "        pm.expect(responseJson.message).to.equal('An unexpected error occurred');",
-                      "    });",
+                      "    pm.collectionVariables.set(\"registry_id\", data.registry_id);",
+                      "    console.log(\"✅ Registry lookup successful:\", data.registry_id);",
                       "}"
                     ]
                   }
@@ -3223,7 +3524,7 @@
                     }
                   ]
                 },
-                "description": "🔍 REGISTRY LOOKUP\n\nRetrieve detailed information about a specific registry.\n\n**Authentication:** Required (Cookie or API Key)\n\n**Path Parameters:**\n- `namespace`: Namespace ID or domain\n- `registry_name`: Registry name to lookup\n\n**Query Parameters (Optional):**\n- `version_id`: Specific version to retrieve\n- `as_on`: Historical lookup date (YYYY-MM-DD)\n\n**Success Response (200):**\n```json\n{\n  \"message\": \"Resource retrieved successfully\",\n  \"data\": {\n    \"namespace\": \"namespace-name\",\n    \"namespace_id\": \"ns_123...\",\n    \"registry_id\": \"reg_456...\",\n    \"registry_name\": \"registry-name\",\n    \"digest\": \"0x123...\",\n    \"description\": \"Registry description\",\n    \"created_by\": \"profile_id\",\n    \"tag\": \"v1.0\",\n    \"schema\": {},\n    \"genesis\": \"0x456...\",\n    \"created_at\": \"2024-01-01T00:00:00Z\",\n    \"updated_at\": \"2024-01-01T00:00:00Z\",\n    \"meta\": {},\n    \"record_count\": 25,\n    \"version_count\": 3,\n    \"version\": \"0x789...\",\n    \"query_allowed\": true,\n    \"is_revoked\": false,\n    \"is_archived\": false,\n    \"ttl\": 600\n  }\n}\n```\n\n**Error Cases:**\n- **400**: Missing parameters or invalid token\n- **401**: Unauthorized (invalid token)\n- **404**: Namespace, registry, or user not found\n- **500**: Internal server error\n\n**Use Cases:**\n- Retrieve registry metadata\n- Verify registry existence\n- Check registry permissions and configuration"
+                "description": "🔍 REGISTRY LOOKUP\n\nRetrieve detailed information about a specific registry.\n\n**Authentication:** Not required\n\n**Path Parameters:**\n- `namespace`: Namespace ID or verified domain\n- `registry_name`: Registry name to look up\n\n**Query Parameters (Optional):**\n- `version_id`: Specific version to retrieve\n- `as_on`: Historical lookup date (YYYY-MM-DD)\n\n**Success Response (200):**\n```json\n{\n  \"message\": \"Resource retrieved successfully\",\n  \"data\": {\n    \"namespace\": \"example.com\",\n    \"namespace_id\": \"did:cord:namespace:...\",\n    \"registry_id\": \"did:cord:registry:...\",\n    \"registry_name\": \"employee-registry\",\n    \"digest\": \"0x123...\",\n    \"description\": \"Registry description\",\n    \"created_by\": \"did:cord:profile:...\",\n    \"tag\": \"membership\",\n    \"schema\": {},\n    \"genesis\": \"2026-05-04T08:30:00.000Z\",\n    \"created_at\": \"2026-05-04T08:30:00.000Z\",\n    \"updated_at\": \"2026-05-04T08:30:00.000Z\",\n    \"state\": \"live\",\n    \"meta\": {},\n    \"record_count\": 25,\n    \"version_count\": 3,\n    \"version\": \"0x456...\",\n    \"query_allowed\": true,\n    \"ttl\": 600,\n    \"proof\": {\n      \"type\": \"DediRegistryProof2026\",\n      \"namespace_did\": \"did:cord:namespace:...\",\n      \"registry_identifier\": \"did:cord:registry:...\",\n      \"creator_did\": \"did:cord:profile:...\",\n      \"digest\": \"0x123...\",\n      \"network_genesis\": \"0xabc...\"\n    }\n  }\n}\n```"
               },
               "response": []
             },
@@ -3261,99 +3562,22 @@
                     "exec": [
                       "// 🧪 RECORD LOOKUP VALIDATION",
                       "pm.test(\"✅ Status code is valid\", function () {",
-                      "    pm.expect([200, 400, 401, 404, 500]).to.include(pm.response.code);",
+                      "    pm.expect([200, 400, 404, 500]).to.include(pm.response.code);",
                       "});",
                       "",
                       "const responseJson = pm.response.json();",
                       "pm.test(\"📄 Response has required structure\", function () {",
-                      "    pm.expect(responseJson).to.have.property('message');",
-                      "    if (pm.response.code === 200) {",
-                      "        pm.expect(responseJson).to.have.property('data');",
-                      "    }",
+                      "    pm.expect(responseJson).to.have.property(\"message\");",
+                      "    if (pm.response.code === 200) pm.expect(responseJson).to.have.property(\"data\");",
                       "});",
                       "",
-                      "// ✅ SUCCESS CASES (200)",
                       "if (pm.response.code === 200) {",
-                      "    // Handle both successful response and expired record",
-                      "    pm.test(\"🎯 Success message is correct\", function () {",
-                      "        pm.expect(responseJson.message).to.be.oneOf([",
-                      "            'Resource retrieved successfully',",
-                      "            'Record has been expired'",
-                      "        ]);",
-                      "    });",
-                      "    ",
                       "    const data = responseJson.data;",
                       "    pm.test(\"🗂️ Data has required record fields\", function () {",
-                      "        pm.expect(data).to.have.property('namespace');",
-                      "        pm.expect(data).to.have.property('namespace_id');",
-                      "        pm.expect(data).to.have.property('registry_id');",
-                      "        pm.expect(data).to.have.property('registry_name');",
-                      "        pm.expect(data).to.have.property('record_id');",
-                      "        pm.expect(data).to.have.property('record_name');",
-                      "        pm.expect(data).to.have.property('description');",
-                      "        pm.expect(data).to.have.property('digest');",
-                      "        pm.expect(data).to.have.property('schema');",
-                      "        pm.expect(data).to.have.property('version_count');",
-                      "        pm.expect(data).to.have.property('version');",
-                      "        pm.expect(data).to.have.property('details');",
-                      "        pm.expect(data).to.have.property('genesis');",
-                      "        pm.expect(data).to.have.property('created_at');",
-                      "        pm.expect(data).to.have.property('updated_at');",
-                      "        pm.expect(data).to.have.property('created_by');",
-                      "        pm.expect(data).to.have.property('state');",
-                      "        pm.expect(data).to.have.property('ttl');",
+                      "        [\"namespace\",\"namespace_id\",\"registry_id\",\"registry_name\",\"record_id\",\"record_name\",\"description\",\"digest\",\"schema\",\"version_count\",\"version\",\"details\",\"meta\",\"genesis\",\"created_at\",\"updated_at\",\"created_by\",\"state\",\"ttl\",\"proof\"].forEach((key) => pm.expect(data).to.have.property(key));",
                       "    });",
-                      "    ",
-                      "    pm.test(\"🔢 Data types are correct\", function () {",
-                      "        pm.expect(typeof data.namespace).to.equal('string');",
-                      "        pm.expect(typeof data.namespace_id).to.equal('string');",
-                      "        pm.expect(typeof data.registry_id).to.equal('string');",
-                      "        pm.expect(typeof data.registry_name).to.equal('string');",
-                      "        pm.expect(typeof data.record_id).to.equal('string');",
-                      "        pm.expect(typeof data.record_name).to.equal('string');",
-                      "        pm.expect(typeof data.description).to.equal('string');",
-                      "        pm.expect(typeof data.digest).to.equal('string');",
-                      "        pm.expect(typeof data.created_by).to.equal('string');",
-                      "        pm.expect(typeof data.version_count).to.equal('number');",
-                      "        pm.expect(typeof data.state).to.equal('string');",
-                      "        pm.expect(typeof data.ttl).to.equal('number');",
-                      "    });",
-                      "    ",
-                      "    // Store for chaining",
-                      "    pm.collectionVariables.set('record_id', data.record_id);",
-                      "    console.log('✅ Record lookup successful:', data.record_id);",
-                      "}",
-                      "",
-                      "// ❌ ERROR CASES",
-                      "else if (pm.response.code === 400) {",
-                      "    pm.test(\"⚠️ Bad request has appropriate message\", function () {",
-                      "        pm.expect(responseJson.message).to.be.oneOf([",
-                      "            'Namespace is missing',",
-                      "            'Registry name is missing',",
-                      "            'Record name is missing',",
-                      "            'Invalid JWT token'",
-                      "        ]);",
-                      "    });",
-                      "}",
-                      "else if (pm.response.code === 401) {",
-                      "    pm.test(\"🔒 Unauthorized error message\", function () {",
-                      "        pm.expect(responseJson.message).to.include('Unauthorized');",
-                      "    });",
-                      "}",
-                      "else if (pm.response.code === 404) {",
-                      "    pm.test(\"🔍 Not found error message\", function () {",
-                      "        pm.expect(responseJson.message).to.be.oneOf([",
-                      "            'Namespace not found',",
-                      "            'Registry not found',",
-                      "            'Record not found',",
-                      "            'User not found'",
-                      "        ]);",
-                      "    });",
-                      "}",
-                      "else if (pm.response.code === 500) {",
-                      "    pm.test(\"💥 Server error message\", function () {",
-                      "        pm.expect(responseJson.message).to.equal('An unexpected error occurred');",
-                      "    });",
+                      "    pm.collectionVariables.set(\"record_id\", data.record_id);",
+                      "    console.log(\"✅ Record lookup successful:\", data.record_id);",
                       "}"
                     ]
                   }
@@ -3392,7 +3616,7 @@
                     }
                   ]
                 },
-                "description": "🔍 RECORD LOOKUP\n\nRetrieve detailed information about a specific record.\n\n**Authentication:** Required (Cookie or API Key)\n\n**Path Parameters:**\n- `namespace`: Namespace ID or domain\n- `registry_name`: Registry name containing the record\n- `record_name`: Record name to lookup\n\n**Query Parameters (Optional):**\n- `version_id`: Specific version to retrieve\n- `as_on`: Historical lookup date (YYYY-MM-DD)\n\n**Success Response (200):**\n```json\n{\n  \"message\": \"Resource retrieved successfully\",\n  \"data\": {\n    \"namespace\": \"namespace-name\",\n    \"namespace_id\": \"ns_123...\",\n    \"registry_id\": \"reg_456...\",\n    \"registry_name\": \"registry-name\",\n    \"record_id\": \"rec_789...\",\n    \"record_name\": \"record-name\",\n    \"description\": \"Record description\",\n    \"digest\": \"0x123...\",\n    \"schema\": {},\n    \"version_count\": 2,\n    \"version\": \"0x456...\",\n    \"details\": {},\n    \"meta\": {},\n    \"genesis\": \"0x789...\",\n    \"created_at\": \"2024-01-01T00:00:00Z\",\n    \"updated_at\": \"2024-01-01T00:00:00Z\",\n    \"created_by\": \"profile_id\",\n    \"state\": \"live\",\n    \"ttl\": 3600\n  }\n}\n```\n\n**Expired Record Response (200):**\n```json\n{\n  \"message\": \"Record has been expired\",\n  \"data\": { /* same structure but state: 'expired' */ }\n}\n```\n\n**Error Cases:**\n- **400**: Missing parameters or invalid token\n- **401**: Unauthorized (invalid token)\n- **404**: Namespace, registry, record, or user not found\n- **500**: Internal server error\n\n**Use Cases:**\n- Retrieve record data and metadata\n- Verify record existence and state\n- Access record content and schema information"
+                "description": "🔍 RECORD LOOKUP\n\nRetrieve detailed information about a specific record.\n\n**Authentication:** Not required\n\n**Path Parameters:**\n- `namespace`: Namespace ID or verified domain\n- `registry_name`: Registry name containing the record\n- `record_name`: Record name to look up\n\n**Query Parameters (Optional):**\n- `version_id`: Specific version to retrieve\n- `as_on`: Historical lookup date (YYYY-MM-DD)\n\n**Success Response (200):**\n```json\n{\n  \"message\": \"Resource retrieved successfully\",\n  \"data\": {\n    \"namespace\": \"example.com\",\n    \"namespace_id\": \"did:cord:namespace:...\",\n    \"registry_id\": \"did:cord:registry:...\",\n    \"registry_name\": \"employee-registry\",\n    \"record_id\": \"did:cord:record:...\",\n    \"record_name\": \"john-doe-profile\",\n    \"description\": \"Record description\",\n    \"digest\": \"0x123...\",\n    \"schema\": {},\n    \"version_count\": 2,\n    \"version\": \"0x456...\",\n    \"details\": {},\n    \"meta\": {},\n    \"genesis\": \"2026-05-04T08:30:00.000Z\",\n    \"created_at\": \"2026-05-04T08:30:00.000Z\",\n    \"updated_at\": \"2026-05-04T08:30:00.000Z\",\n    \"created_by\": \"did:cord:profile:...\",\n    \"state\": \"live\",\n    \"ttl\": 3600,\n    \"proof\": {\n      \"type\": \"DediRecordProof2026\",\n      \"namespace_did\": \"did:cord:namespace:...\",\n      \"registry_identifier\": \"did:cord:registry:...\",\n      \"record_identifier\": \"did:cord:record:...\",\n      \"creator_did\": \"did:cord:profile:...\",\n      \"digest\": \"0x123...\",\n      \"network_genesis\": \"0xabc...\"\n    }\n  }\n}\n```"
               },
               "response": []
             }
@@ -3427,75 +3651,19 @@
                     "exec": [
                       "// 🧪 NAMESPACE QUERY VALIDATION",
                       "pm.test(\"✅ Status code is valid\", function () {",
-                      "    pm.expect([200, 400, 401, 404, 500]).to.include(pm.response.code);",
+                      "    pm.expect([200, 400, 404, 500]).to.include(pm.response.code);",
                       "});",
                       "",
                       "const responseJson = pm.response.json();",
                       "pm.test(\"📄 Response has required structure\", function () {",
-                      "    pm.expect(responseJson).to.have.property('message');",
-                      "    if (pm.response.code === 200) {",
-                      "        pm.expect(responseJson).to.have.property('data');",
-                      "    }",
+                      "    pm.expect(responseJson).to.have.property(\"message\");",
+                      "    if (pm.response.code === 200) pm.expect(responseJson).to.have.property(\"data\");",
                       "});",
                       "",
-                      "// ✅ SUCCESS CASE (200)",
                       "if (pm.response.code === 200) {",
-                      "    pm.test(\"🎯 Success message is correct\", function () {",
-                      "        pm.expect(responseJson.message).to.equal('Resource retrieved successfully');",
-                      "    });",
-                      "    ",
                       "    const data = responseJson.data;",
                       "    pm.test(\"🗂️ Data has required namespace query fields\", function () {",
-                      "        pm.expect(data).to.have.property('namespace_id');",
-                      "        pm.expect(data).to.have.property('namespace_name');",
-                      "        pm.expect(data).to.have.property('created_by');",
-                      "        pm.expect(data).to.have.property('created_at');",
-                      "        pm.expect(data).to.have.property('updated_at');",
-                      "        pm.expect(data).to.have.property('total_registries');",
-                      "        pm.expect(data).to.have.property('registries');",
-                      "    });",
-                      "    ",
-                      "    pm.test(\"🔢 Data types are correct\", function () {",
-                      "        pm.expect(typeof data.namespace_id).to.equal('string');",
-                      "        pm.expect(typeof data.namespace_name).to.equal('string');",
-                      "        pm.expect(typeof data.created_by).to.equal('string');",
-                      "        pm.expect(typeof data.total_registries).to.equal('number');",
-                      "        pm.expect(Array.isArray(data.registries)).to.be.true;",
-                      "    });",
-                      "    ",
-                      "    // Validate registry structure if present",
-                      "    if (data.registries && data.registries.length > 0) {",
-                      "        pm.test(\"📋 Registry items have correct structure\", function () {",
-                      "            const registry = data.registries[0];",
-                      "            pm.expect(registry).to.have.property('registry_id');",
-                      "            pm.expect(registry).to.have.property('registry_name');",
-                      "            pm.expect(registry).to.have.property('description');",
-                      "            pm.expect(registry).to.have.property('created_at');",
-                      "            pm.expect(registry).to.have.property('updated_at');",
-                      "            pm.expect(registry).to.have.property('version_count');",
-                      "        });",
-                      "    }",
-                      "    ",
-                      "    // Store for chaining",
-                      "    pm.collectionVariables.set('namespace_id', data.namespace_id);",
-                      "    pm.collectionVariables.set('total_registries', data.total_registries);",
-                      "    console.log('✅ Namespace query successful:', data.total_registries, 'registries found');",
-                      "}",
-                      "",
-                      "// ❌ ERROR CASES",
-                      "else if (pm.response.code === 404) {",
-                      "    pm.test(\"🔍 Not found error message\", function () {",
-                      "        pm.expect(responseJson.message).to.equal('namespace not found');",
-                      "    });",
-                      "}",
-                      "else if (pm.response.code === 401) {",
-                      "    pm.test(\"🔒 Unauthorized error message\", function () {",
-                      "        pm.expect(responseJson.message).to.include('Unauthorized');",
-                      "    });",
-                      "}",
-                      "else if (pm.response.code === 500) {",
-                      "    pm.test(\"💥 Server error message\", function () {",
-                      "        pm.expect(responseJson.message).to.equal('An unexpected error occurred');",
+                      "        [\"namespace_id\",\"namespace_name\",\"domain\",\"created_by\",\"created_at\",\"updated_at\",\"total_registries\",\"registries\"].forEach((key) => pm.expect(data).to.have.property(key));",
                       "    });",
                       "}"
                     ]
@@ -3534,7 +3702,7 @@
                     {
                       "key": "status",
                       "value": "",
-                      "description": "Filter by status: revoked, suspended (optional)",
+                      "description": "Filter by status: active, inactive (optional)",
                       "disabled": true
                     },
                     {
@@ -3546,7 +3714,7 @@
                     {
                       "key": "sort",
                       "value": "",
-                      "description": "Sort by: date, status, name (optional)",
+                      "description": "Sort by: date, status, name, id (optional)",
                       "disabled": true
                     },
                     {
@@ -3569,7 +3737,7 @@
                     }
                   ]
                 },
-                "description": "🔍 NAMESPACE QUERY (GET REGISTRIES)\n\nQuery all registries within a namespace with filtering and pagination support.\n\n**Authentication:** Required (Cookie or API Key)\n\n**Path Parameters:**\n- `namespace`: Namespace ID or domain to query\n\n**Query Parameters (Optional):**\n- `from`: Filter registries updated from date (YYYY-MM-DD)\n- `to`: Filter registries updated to date (YYYY-MM-DD)\n- `status`: Filter by status (`revoked`, `suspended`)\n- `name`: Search by registry name (minimum 3 characters)\n- `sort`: Sort results (`date`, `status`, `name`)\n- `page`: Page number for pagination\n- `page_size`: Items per page\n- `as_on`: Historical query date (YYYY-MM-DD)\n\n**Success Response (200):**\n```json\n{\n  \"message\": \"Resource retrieved successfully\",\n  \"data\": {\n    \"namespace_id\": \"ns_123...\",\n    \"namespace_name\": \"namespace-name\",\n    \"domain\": \"example.com\",\n    \"created_by\": \"profile_id\",\n    \"created_at\": \"2024-01-01T00:00:00Z\",\n    \"updated_at\": \"2024-01-01T00:00:00Z\",\n    \"total_registries\": 25,\n    \"page_number\": 1,\n    \"page_size\": 10,\n    \"registries\": [\n      {\n        \"registry_id\": \"reg_456...\",\n        \"registry_name\": \"registry-name\",\n        \"description\": \"Registry description\",\n        \"created_at\": \"2024-01-01T00:00:00Z\",\n        \"updated_at\": \"2024-01-01T00:00:00Z\",\n        \"version_count\": 3,\n        \"state\": \"live\"\n      }\n    ]\n  }\n}\n```\n\n**Error Cases:**\n- **404**: Namespace not found\n- **401**: Unauthorized (invalid token)\n- **500**: Internal server error\n\n**Use Cases:**\n- List all registries in a namespace\n- Search and filter registries\n- Paginate through large registry collections\n- Monitor registry status and activity"
+                "description": "🔍 NAMESPACE QUERY (GET REGISTRIES)\n\nQuery all registries within a namespace with filtering and pagination support.\n\n**Authentication:** Not required\n\n**Path Parameters:**\n- `namespace`: Namespace ID or domain to query\n\n**Query Parameters (Optional):**\n- `from`: Filter registries updated from date (YYYY-MM-DD)\n- `to`: Filter registries updated to date (YYYY-MM-DD)\n- `status`: Filter by status (`active`, `inactive`)\n- `name`: Search by registry name (minimum 3 characters)\n- `sort`: Sort results (`date`, `status`, `name`, `id`)\n- `page`: Page number for pagination\n- `page_size`: Items per page\n- `as_on`: Historical query date (YYYY-MM-DD)\n\n**Success Response (200):**\n```json\n{\n  \"message\": \"Resource retrieved successfully\",\n  \"data\": {\n    \"namespace_id\": \"ns_123...\",\n    \"namespace_name\": \"namespace-name\",\n    \"domain\": \"example.com\",\n    \"created_by\": \"profile_id\",\n    \"created_at\": \"2024-01-01T00:00:00Z\",\n    \"updated_at\": \"2024-01-01T00:00:00Z\",\n    \"total_registries\": 25,\n    \"page_number\": 1,\n    \"page_size\": 10,\n    \"registries\": [\n      {\n        \"registry_id\": \"reg_456...\",\n        \"registry_name\": \"registry-name\",\n        \"description\": \"Registry description\",\n        \"created_at\": \"2024-01-01T00:00:00Z\",\n        \"updated_at\": \"2024-01-01T00:00:00Z\",\n        \"version_count\": 3,\n        \"state\": \"live\"\n      }\n    ]\n  }\n}\n```\n\n**Error Cases:**\n- **404**: Namespace not found\n- **401**: Unauthorized (invalid token)\n- **500**: Internal server error\n\n**Use Cases:**\n- List all registries in a namespace\n- Search and filter registries\n- Paginate through large registry collections\n- Monitor registry status and activity"
               },
               "response": []
             },
@@ -3603,80 +3771,19 @@
                     "exec": [
                       "// 🧪 REGISTRY QUERY VALIDATION",
                       "pm.test(\"✅ Status code is valid\", function () {",
-                      "    pm.expect([200, 400, 401, 404, 500]).to.include(pm.response.code);",
+                      "    pm.expect([200, 400, 404, 500]).to.include(pm.response.code);",
                       "});",
                       "",
                       "const responseJson = pm.response.json();",
                       "pm.test(\"📄 Response has required structure\", function () {",
-                      "    pm.expect(responseJson).to.have.property('message');",
-                      "    if (pm.response.code === 200) {",
-                      "        pm.expect(responseJson).to.have.property('data');",
-                      "    }",
+                      "    pm.expect(responseJson).to.have.property(\"message\");",
+                      "    if (pm.response.code === 200) pm.expect(responseJson).to.have.property(\"data\");",
                       "});",
                       "",
-                      "// ✅ SUCCESS CASE (200)",
                       "if (pm.response.code === 200) {",
-                      "    pm.test(\"🎯 Success message is correct\", function () {",
-                      "        pm.expect(responseJson.message).to.equal('Resource retrieved successfully');",
-                      "    });",
-                      "    ",
                       "    const data = responseJson.data;",
                       "    pm.test(\"🗂️ Data has required registry query fields\", function () {",
-                      "        pm.expect(data).to.have.property('namespace_id');",
-                      "        pm.expect(data).to.have.property('namespace_name');",
-                      "        pm.expect(data).to.have.property('registry_id');",
-                      "        pm.expect(data).to.have.property('registry_name');",
-                      "        pm.expect(data).to.have.property('created_by');",
-                      "        pm.expect(data).to.have.property('created_at');",
-                      "        pm.expect(data).to.have.property('updated_at');",
-                      "        pm.expect(data).to.have.property('total_records');",
-                      "        pm.expect(data).to.have.property('records');",
-                      "    });",
-                      "    ",
-                      "    pm.test(\"🔢 Data types are correct\", function () {",
-                      "        pm.expect(typeof data.namespace_id).to.equal('string');",
-                      "        pm.expect(typeof data.namespace_name).to.equal('string');",
-                      "        pm.expect(typeof data.registry_id).to.equal('string');",
-                      "        pm.expect(typeof data.registry_name).to.equal('string');",
-                      "        pm.expect(typeof data.created_by).to.equal('string');",
-                      "        pm.expect(typeof data.total_records).to.equal('number');",
-                      "        pm.expect(Array.isArray(data.records)).to.be.true;",
-                      "    });",
-                      "    ",
-                      "    // Validate record structure if present",
-                      "    if (data.records && data.records.length > 0) {",
-                      "        pm.test(\"📋 Record items have correct structure\", function () {",
-                      "            const record = data.records[0];",
-                      "            pm.expect(record).to.have.property('record_id');",
-                      "            pm.expect(record).to.have.property('record_name');",
-                      "            pm.expect(record).to.have.property('digest');",
-                      "            pm.expect(record).to.have.property('description');",
-                      "            pm.expect(record).to.have.property('created_at');",
-                      "            pm.expect(record).to.have.property('updated_at');",
-                      "            pm.expect(record).to.have.property('state');",
-                      "        });",
-                      "    }",
-                      "    ",
-                      "    // Store for chaining",
-                      "    pm.collectionVariables.set('registry_id', data.registry_id);",
-                      "    pm.collectionVariables.set('total_records', data.total_records);",
-                      "    console.log('✅ Registry query successful:', data.total_records, 'records found');",
-                      "}",
-                      "",
-                      "// ❌ ERROR CASES",
-                      "else if (pm.response.code === 404) {",
-                      "    pm.test(\"🔍 Not found error message\", function () {",
-                      "        pm.expect(responseJson.message).to.be.oneOf(['Registry not found', 'Namespace not found']);",
-                      "    });",
-                      "}",
-                      "else if (pm.response.code === 401) {",
-                      "    pm.test(\"🔒 Unauthorized error message\", function () {",
-                      "        pm.expect(responseJson.message).to.include('Unauthorized');",
-                      "    });",
-                      "}",
-                      "else if (pm.response.code === 500) {",
-                      "    pm.test(\"💥 Server error message\", function () {",
-                      "        pm.expect(responseJson.message).to.equal('An unexpected error occurred');",
+                      "        [\"namespace_id\",\"namespace_name\",\"registry_id\",\"registry_name\",\"schema\",\"meta\",\"created_by\",\"created_at\",\"updated_at\",\"total_records\",\"records\"].forEach((key) => pm.expect(data).to.have.property(key));",
                       "    });",
                       "}"
                     ]
@@ -3716,7 +3823,7 @@
                     {
                       "key": "state",
                       "value": "",
-                      "description": "Filter by state: revoked, suspended, expired (optional)",
+                      "description": "Filter by state: live (optional)",
                       "disabled": true
                     },
                     {
@@ -3728,7 +3835,7 @@
                     {
                       "key": "sort",
                       "value": "",
-                      "description": "Sort by: date, state, name (optional)",
+                      "description": "Sort by: date, status, name, id (optional)",
                       "disabled": true
                     },
                     {
@@ -3751,7 +3858,7 @@
                     }
                   ]
                 },
-                "description": "🔍 REGISTRY QUERY (GET RECORDS)\n\nQuery all records within a registry with filtering and pagination support.\n\n**Authentication:** Required (Cookie or API Key)\n\n**Path Parameters:**\n- `namespace`: Namespace ID or domain containing the registry\n- `registry_name`: Registry ID or name to query\n\n**Query Parameters (Optional):**\n- `from`: Filter records updated from date (YYYY-MM-DD)\n- `to`: Filter records updated to date (YYYY-MM-DD)\n- `state`: Filter by state (`revoked`, `suspended`, `expired`)\n- `name`: Search by record name (minimum 3 characters)\n- `sort`: Sort results (`date`, `state`, `name`)\n- `page`: Page number for pagination\n- `page_size`: Items per page\n- `as_on`: Historical query date (YYYY-MM-DD)\n\n**Success Response (200):**\n```json\n{\n  \"message\": \"Resource retrieved successfully\",\n  \"data\": {\n    \"namespace_id\": \"ns_123...\",\n    \"namespace_name\": \"namespace-name\",\n    \"registry_id\": \"reg_456...\",\n    \"registry_name\": \"registry-name\",\n    \"created_by\": \"profile_id\",\n    \"created_at\": \"2024-01-01T00:00:00Z\",\n    \"updated_at\": \"2024-01-01T00:00:00Z\",\n    \"total_records\": 50,\n    \"page_number\": 1,\n    \"page_size\": 10,\n    \"records\": [\n      {\n        \"record_id\": \"rec_789...\",\n        \"record_name\": \"record-name\",\n        \"digest\": \"sha256:abc123...\",\n        \"description\": \"Record description\",\n        \"created_at\": \"2024-01-01T00:00:00Z\",\n        \"updated_at\": \"2024-01-01T00:00:00Z\",\n        \"state\": \"live\",\n        \"ttl\": 86400\n      }\n    ]\n  }\n}\n```\n\n**Error Cases:**\n- **404**: Registry not found or namespace not found\n- **401**: Unauthorized (invalid token)\n- **500**: Internal server error\n\n**Use Cases:**\n- List all records in a registry\n- Search and filter records by state or name\n- Paginate through large record collections\n- Monitor record activity and expiration"
+                "description": "🔍 REGISTRY QUERY (GET RECORDS)\n\nQuery live records within a registry with filtering and pagination support.\n\n**Authentication:** Not required\n\n**Path Parameters:**\n- `namespace`: Namespace ID or verified domain containing the registry\n- `registry_name`: Registry name to query\n\n**Query Parameters (Optional):**\n- `from`: Filter records updated from date (YYYY-MM-DD)\n- `to`: Filter records updated to date (YYYY-MM-DD)\n- `state`: Filter by state (`live`)\n- `name`: Search by record name (minimum 3 characters)\n- `sort`: Sort results (`date`, `status`, `name`, `id`)\n- `page`: Page number for pagination\n- `page_size`: Items per page\n- `as_on`: Historical query date (YYYY-MM-DD)\n\n**Success Response (200):**\n```json\n{\n  \"message\": \"Resource retrieved successfully\",\n  \"data\": {\n    \"namespace_id\": \"did:cord:namespace:...\",\n    \"namespace_name\": \"example\",\n    \"registry_id\": \"did:cord:registry:...\",\n    \"registry_name\": \"employee-registry\",\n    \"schema\": {},\n    \"meta\": {},\n    \"created_by\": \"did:cord:profile:...\",\n    \"created_at\": \"2026-05-04T08:30:00.000Z\",\n    \"updated_at\": \"2026-05-04T08:30:00.000Z\",\n    \"total_records\": 50,\n    \"total_pages\": 5,\n    \"page_number\": 1,\n    \"page_size\": 10,\n    \"records\": [\n      {\n        \"record_id\": \"did:cord:record:...\",\n        \"record_name\": \"john-doe-profile\",\n        \"digest\": \"0x123...\",\n        \"description\": \"Record description\",\n        \"details\": {},\n        \"meta\": {},\n        \"version\": \"0x456...\",\n        \"version_count\": 2,\n        \"created_by\": \"did:cord:profile:...\",\n        \"genesis\": \"2026-05-04T08:30:00.000Z\",\n        \"created_at\": \"2026-05-04T08:30:00.000Z\",\n        \"updated_at\": \"2026-05-04T08:30:00.000Z\",\n        \"state\": \"live\",\n        \"ttl\": 3600\n      }\n    ]\n  }\n}\n```"
               },
               "response": []
             }
@@ -3786,7 +3893,7 @@
                     "exec": [
                       "// 🧪 NAMESPACE VERSION LIST VALIDATION",
                       "pm.test(\"✅ Status code is valid\", function () {",
-                      "    pm.expect([200, 400, 401, 404, 500]).to.include(pm.response.code);",
+                      "    pm.expect([200, 400, 404, 500]).to.include(pm.response.code);",
                       "});",
                       "",
                       "const responseJson = pm.response.json();",
@@ -3881,7 +3988,7 @@
                     "{{namespace}}"
                   ]
                 },
-                "description": "📋 NAMESPACE VERSION LIST\n\nRetrieve all available versions for a specific namespace.\n\n**Authentication:** Required (Cookie or API Key)\n\n**Path Parameters:**\n- `namespace`: Namespace ID or domain to get versions for\n\n**Success Response (200):**\n```json\n{\n  \"message\": \"Resource retrieved successfully\",\n  \"data\": {\n    \"created_by\": \"profile_id\",\n    \"created_at\": \"2024-01-01T00:00:00Z\",\n    \"updated_at\": \"2024-01-01T00:00:00Z\",\n    \"total_versions\": 5,\n    \"versions\": [\n      \"v1.2.3\",\n      \"v1.2.2\",\n      \"v1.2.1\",\n      \"v1.2.0\",\n      \"v1.1.0\"\n    ],\n    \"ttl\": 86400\n  }\n}\n```\n\n**Error Cases:**\n- **404**: Namespace not found\n- **400**: Invalid input (namespace missing)\n- **401**: Unauthorized (invalid token)\n- **500**: Internal server error\n\n**Use Cases:**\n- Browse namespace version history\n- Track namespace evolution over time\n- Select specific version for historical lookups\n- Audit namespace changes and updates"
+                "description": "📋 NAMESPACE VERSION LIST\n\nRetrieve all available versions for a specific namespace.\n\n**Authentication:** Not required\n\n**Path Parameters:**\n- `namespace`: Namespace ID or domain to get versions for\n\n**Success Response (200):**\n```json\n{\n  \"message\": \"Resource retrieved successfully\",\n  \"data\": {\n    \"created_by\": \"profile_id\",\n    \"created_at\": \"2024-01-01T00:00:00Z\",\n    \"updated_at\": \"2024-01-01T00:00:00Z\",\n    \"total_versions\": 5,\n    \"versions\": [\n      \"v1.2.3\",\n      \"v1.2.2\",\n      \"v1.2.1\",\n      \"v1.2.0\",\n      \"v1.1.0\"\n    ],\n    \"ttl\": 86400\n  }\n}\n```\n\n**Error Cases:**\n- **404**: Namespace not found\n- **400**: Invalid input (namespace missing)\n- **401**: Unauthorized (invalid token)\n- **500**: Internal server error\n\n**Use Cases:**\n- Browse namespace version history\n- Track namespace evolution over time\n- Select specific version for historical lookups\n- Audit namespace changes and updates"
               },
               "response": []
             },
@@ -3915,7 +4022,7 @@
                     "exec": [
                       "// 🧪 REGISTRY VERSION LIST VALIDATION",
                       "pm.test(\"✅ Status code is valid\", function () {",
-                      "    pm.expect([200, 400, 401, 404, 500]).to.include(pm.response.code);",
+                      "    pm.expect([200, 400, 404, 500]).to.include(pm.response.code);",
                       "});",
                       "",
                       "const responseJson = pm.response.json();",
@@ -4015,7 +4122,7 @@
                     "{{registry_name}}"
                   ]
                 },
-                "description": "📋 REGISTRY VERSION LIST\n\nRetrieve all available versions for a specific registry.\n\n**Authentication:** Required (Cookie or API Key)\n\n**Path Parameters:**\n- `namespace`: Namespace ID or domain containing the registry\n- `registry_name`: Registry name to get versions for\n\n**Success Response (200):**\n```json\n{\n  \"message\": \"Resource retrieved successfully\",\n  \"data\": {\n    \"registry_name\": \"registry-name\",\n    \"created_by\": \"profile_id\",\n    \"schema\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"field1\": { \"type\": \"string\" }\n      }\n    },\n    \"created_at\": \"2024-01-01T00:00:00Z\",\n    \"updated_at\": \"2024-01-01T00:00:00Z\",\n    \"total_versions\": 3,\n    \"versions\": [\n      \"v1.2.1\",\n      \"v1.2.0\",\n      \"v1.1.0\"\n    ],\n    \"ttl\": 86400\n  }\n}\n```\n\n**Error Cases:**\n- **400**: Invalid input (namespace/registry missing) or not found\n- **401**: Unauthorized (invalid token)\n- **500**: Internal server error\n\n**Use Cases:**\n- Browse registry version history\n- Track schema evolution over time\n- Select specific version for historical lookups\n- Audit registry changes and schema updates"
+                "description": "📋 REGISTRY VERSION LIST\n\nRetrieve all available versions for a specific registry.\n\n**Authentication:** Not required\n\n**Path Parameters:**\n- `namespace`: Namespace ID or domain containing the registry\n- `registry_name`: Registry name to get versions for\n\n**Success Response (200):**\n```json\n{\n  \"message\": \"Resource retrieved successfully\",\n  \"data\": {\n    \"registry_name\": \"registry-name\",\n    \"created_by\": \"profile_id\",\n    \"schema\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"field1\": { \"type\": \"string\" }\n      }\n    },\n    \"created_at\": \"2024-01-01T00:00:00Z\",\n    \"updated_at\": \"2024-01-01T00:00:00Z\",\n    \"total_versions\": 3,\n    \"versions\": [\n      \"v1.2.1\",\n      \"v1.2.0\",\n      \"v1.1.0\"\n    ],\n    \"ttl\": 86400\n  }\n}\n```\n\n**Error Cases:**\n- **400**: Invalid input (namespace/registry missing) or not found\n- **401**: Unauthorized (invalid token)\n- **500**: Internal server error\n\n**Use Cases:**\n- Browse registry version history\n- Track schema evolution over time\n- Select specific version for historical lookups\n- Audit registry changes and schema updates"
               },
               "response": []
             },
@@ -4053,7 +4160,7 @@
                     "exec": [
                       "// 🧪 RECORD VERSION LIST VALIDATION",
                       "pm.test(\"✅ Status code is valid\", function () {",
-                      "    pm.expect([200, 400, 401, 500]).to.include(pm.response.code);",
+                      "    pm.expect([200, 400, 500]).to.include(pm.response.code);",
                       "});",
                       "",
                       "const responseJson = pm.response.json();",
@@ -4154,7 +4261,7 @@
                     "{{record_name}}"
                   ]
                 },
-                "description": "📋 RECORD VERSION LIST\n\nRetrieve all available versions for a specific record.\n\n**Authentication:** Required (Cookie or API Key)\n\n**Path Parameters:**\n- `namespace`: Namespace ID or domain containing the registry\n- `registry_name`: Registry name containing the record\n- `record_name`: Record name to get versions for\n\n**Success Response (200):**\n```json\n{\n  \"message\": \"Resource retrieved successfully\",\n  \"data\": {\n    \"created_by\": \"profile_id\",\n    \"schema\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"field1\": { \"type\": \"string\" },\n        \"field2\": { \"type\": \"number\" }\n      }\n    },\n    \"created_at\": \"2024-01-01T00:00:00Z\",\n    \"updated_at\": \"2024-01-01T00:00:00Z\",\n    \"total_versions\": 4,\n    \"versions\": [\n      \"v2.1.0\",\n      \"v2.0.1\",\n      \"v2.0.0\",\n      \"v1.0.0\"\n    ],\n    \"ttl\": 86400\n  }\n}\n```\n\n**Error Cases:**\n- **400**: Invalid input (namespace/registry/record missing) or not found\n- **401**: Unauthorized (invalid token)\n- **500**: Internal server error\n\n**Use Cases:**\n- Browse record version history\n- Track record data evolution over time\n- Select specific version for historical lookups\n- Audit record changes and updates\n- Rollback to previous record versions"
+                "description": "📋 RECORD VERSION LIST\n\nRetrieve all available versions for a specific record.\n\n**Authentication:** Not required\n\n**Path Parameters:**\n- `namespace`: Namespace ID or domain containing the registry\n- `registry_name`: Registry name containing the record\n- `record_name`: Record name to get versions for\n\n**Success Response (200):**\n```json\n{\n  \"message\": \"Resource retrieved successfully\",\n  \"data\": {\n    \"created_by\": \"profile_id\",\n    \"schema\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"field1\": { \"type\": \"string\" },\n        \"field2\": { \"type\": \"number\" }\n      }\n    },\n    \"created_at\": \"2024-01-01T00:00:00Z\",\n    \"updated_at\": \"2024-01-01T00:00:00Z\",\n    \"total_versions\": 4,\n    \"versions\": [\n      \"v2.1.0\",\n      \"v2.0.1\",\n      \"v2.0.0\",\n      \"v1.0.0\"\n    ],\n    \"ttl\": 86400\n  }\n}\n```\n\n**Error Cases:**\n- **400**: Invalid input (namespace/registry/record missing) or not found\n- **401**: Unauthorized (invalid token)\n- **500**: Internal server error\n\n**Use Cases:**\n- Browse record version history\n- Track record data evolution over time\n- Select specific version for historical lookups\n- Audit record changes and updates\n- Rollback to previous record versions"
               },
               "response": []
             }
@@ -4230,6 +4337,75 @@
               "response": []
             }
           ]
+        },
+        {
+          "name": "query registries by schema tag",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// 🏷️ ACCESS SECTION - QUERY REGISTRIES BY SCHEMA TAG",
+                  "if (!pm.collectionVariables.get('tag')) {",
+                  "    console.log('⚠️ Warning: tag variable not set, defaulting to membership');",
+                  "    pm.collectionVariables.set('tag', 'membership');",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"✅ Status code is valid\", function () {",
+                  "    pm.expect([200, 400, 500]).to.include(pm.response.code);",
+                  "});",
+                  "",
+                  "const responseJson = pm.response.json();",
+                  "pm.test(\"📄 Response has message\", function () {",
+                  "    pm.expect(responseJson).to.have.property('message');",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    pm.test(\"🏷️ Response includes tag query data\", function () {",
+                  "        pm.expect(responseJson).to.have.property('data');",
+                  "        pm.expect(responseJson.data).to.have.property('tag');",
+                  "        pm.expect(responseJson.data).to.have.property('total_registries');",
+                  "        pm.expect(responseJson.data).to.have.property('registries');",
+                  "        pm.expect(Array.isArray(responseJson.data.registries)).to.be.true;",
+                  "    });",
+                  "}",
+                  "else if (pm.response.code === 400) {",
+                  "    pm.test(\"📝 Invalid tag message is present\", function () {",
+                  "        pm.expect(responseJson.message).to.include('Invalid input');",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{url}}/dedi/{{tag}}/get-registry-by-tag",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "dedi",
+                "{{tag}}",
+                "get-registry-by-tag"
+              ]
+            },
+            "description": "🏷️ QUERY REGISTRIES BY SCHEMA TAG\n\nRetrieve verified registries associated with a supported schema tag.\n\n**Authentication:** Not required\n\n**Path Parameters:**\n- `tag`: Schema tag to query, such as `membership`, `public_key`, or `revoke`\n\n**Success Response (200):**\n```json\n{\n  \"message\": \"Resource retrieved successfully\",\n  \"data\": {\n    \"tag\": \"membership\",\n    \"total_registries\": 1,\n    \"registries\": [\n      {\n        \"registry_id\": \"reg_123...\",\n        \"registry_name\": \"employee-registry\"\n      }\n    ]\n  }\n}\n```\n\n**Error Cases:**\n- **400**: Missing or unsupported tag\n- **500**: Internal server error"
+          },
+          "response": []
         }
       ]
     },
@@ -4689,8 +4865,8 @@
                 "type": "text/javascript",
                 "exec": [
                   "// 🧪 Test: Status Code Validation",
-                  "pm.test('✅ Status code should be 200, 400, 401, 404, or 500', function () {",
-                  "    pm.expect(pm.response.code).to.be.oneOf([200, 400, 401, 404, 500]);",
+                  "pm.test('✅ Status code should be 200, 400, 404, or 500', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 400, 404, 500]);",
                   "});",
                   "",
                   "const responseJson = pm.response.json();",
@@ -4816,7 +4992,7 @@
                 }
               ]
             },
-            "description": "🔍 ADVANCED RECORD SEARCH\n\nPowerful search functionality across all records in a namespace with support for nested field searching and flexible filtering.\n\n**Authentication:** Required (Cookie or API Key)\n\n**Path Parameters:**\n- `namespace`: Namespace ID or domain to search within\n\n**Query Parameters (ALL OPTIONAL):**\n- `registry_name`: Filter by registry name (partial match)\n- `record_name`: Search by record name (partial match)\n- **Any field from record details:** Search by any field in the record's JSON details\n- **Nested field support:** Use dot notation for nested fields (e.g., `detail.address`, `profile.name`)\n\n**🎯 SEARCH CAPABILITIES:**\n1. **Registry Filtering:** `registry_name=my-registry`\n2. **Record Name Search:** `record_name=test-record`\n3. **Direct Field Search:** `email=user@example.com` (searches in record.details.email)\n4. **Nested Field Search:** `detail.publicKey=abc123` (searches in record.details.detail.publicKey)\n5. **Multiple Criteria:** Combine any parameters for precise filtering\n6. **Partial Matching:** All searches use case-insensitive partial matching (ILIKE)\n\n**📝 FIELD SEARCH EXAMPLES:**\n- Basic fields: `email`, `publicKey`, `phone`, `name`\n- Nested fields: `detail.address`, `profile.name`, `contact.email`\n- Deep nesting: `data.user.profile.settings.theme`\n\n**Success Response (200):**\n```json\n{\n  \"message\": \"Search results\",\n  \"data\": [\n    {\n      \"record_id\": \"uuid\",\n      \"record_name\": \"test-record\",\n      \"registry_name\": \"my-registry\",\n      \"namespace_id\": \"my-namespace\",\n      \"description\": \"Test record description\",\n      \"details\": {\n        \"email\": \"user@example.com\",\n        \"publicKey\": \"abc123...\",\n        \"detail\": {\n          \"address\": \"123 Main St\"\n        }\n      },\n      \"state\": \"live\",\n      \"created_at\": \"2024-01-01T00:00:00Z\",\n      \"updated_at\": \"2024-01-15T10:30:00Z\",\n      \"version\": \"v1.2.0\",\n      \"ttl\": 86400\n    }\n  ]\n}\n```\n\n**Error Cases:**\n- **400**: Missing namespace parameter\n- **401**: Unauthorized (invalid or missing token)\n- **404**: Namespace not found\n- **500**: Query failed or database error\n\n**💡 USE CASES:**\n- **User Discovery:** Find records by email, name, or contact info\n- **Registry Browsing:** Filter records within specific registries\n- **Data Mining:** Search across custom fields in JSON details\n- **Compliance:** Locate records with specific attributes\n- **Integration:** API-driven search for external applications\n- **Debugging:** Find test records or problematic entries\n\n**⚡ PERFORMANCE TIPS:**\n- Use specific field searches rather than broad queries\n- Combine multiple criteria to narrow results\n- Registry filtering significantly improves search performance\n- Nested field searches use PostgreSQL JSON operators for efficiency\n\n**🔐 SECURITY:**\n- Only returns records you have permission to view\n- Authentication required for all search operations\n- Search scope limited to authenticated user's accessible data"
+            "description": "🔍 ADVANCED RECORD SEARCH\n\nPowerful search functionality across all records in a namespace with support for nested field searching and flexible filtering.\n\n**Authentication:** Not required\n\n**Path Parameters:**\n- `namespace`: Namespace ID or domain to search within\n\n**Query Parameters (ALL OPTIONAL):**\n- `registry_name`: Filter by registry name (partial match)\n- `record_name`: Search by record name (partial match)\n- **Any field from record details:** Search by any field in the record's JSON details\n- **Nested field support:** Use dot notation for nested fields (e.g., `detail.address`, `profile.name`)\n\n**🎯 SEARCH CAPABILITIES:**\n1. **Registry Filtering:** `registry_name=my-registry`\n2. **Record Name Search:** `record_name=test-record`\n3. **Direct Field Search:** `email=user@example.com` (searches in record.details.email)\n4. **Nested Field Search:** `detail.publicKey=abc123` (searches in record.details.detail.publicKey)\n5. **Multiple Criteria:** Combine any parameters for precise filtering\n6. **Partial Matching:** All searches use case-insensitive partial matching (ILIKE)\n\n**📝 FIELD SEARCH EXAMPLES:**\n- Basic fields: `email`, `publicKey`, `phone`, `name`\n- Nested fields: `detail.address`, `profile.name`, `contact.email`\n- Deep nesting: `data.user.profile.settings.theme`\n\n**Success Response (200):**\n```json\n{\n  \"message\": \"Search results\",\n  \"data\": [\n    {\n      \"record_id\": \"uuid\",\n      \"record_name\": \"test-record\",\n      \"registry_name\": \"my-registry\",\n      \"namespace_id\": \"my-namespace\",\n      \"description\": \"Test record description\",\n      \"details\": {\n        \"email\": \"user@example.com\",\n        \"publicKey\": \"abc123...\",\n        \"detail\": {\n          \"address\": \"123 Main St\"\n        }\n      },\n      \"state\": \"live\",\n      \"created_at\": \"2024-01-01T00:00:00Z\",\n      \"updated_at\": \"2024-01-15T10:30:00Z\",\n      \"version\": \"v1.2.0\",\n      \"ttl\": 86400\n    }\n  ]\n}\n```\n\n**Error Cases:**\n- **400**: Missing namespace parameter\n- **401**: Unauthorized (invalid or missing token)\n- **404**: Namespace not found\n- **500**: Query failed or database error\n\n**💡 USE CASES:**\n- **User Discovery:** Find records by email, name, or contact info\n- **Registry Browsing:** Filter records within specific registries\n- **Data Mining:** Search across custom fields in JSON details\n- **Compliance:** Locate records with specific attributes\n- **Integration:** API-driven search for external applications\n- **Debugging:** Find test records or problematic entries\n\n**⚡ PERFORMANCE TIPS:**\n- Use specific field searches rather than broad queries\n- Combine multiple criteria to narrow results\n- Registry filtering significantly improves search performance\n- Nested field searches use PostgreSQL JSON operators for efficiency\n\n**🔐 SECURITY:**\n- Only returns records you have permission to view\n- Authentication required for all search operations\n- Search scope limited to authenticated user's accessible data"
           },
           "response": []
         }
@@ -4993,7 +5169,7 @@
                 "subscribe"
               ]
             },
-            "description": "👀 SUBSCRIBE TO WATCH\n\nSubscribe to real-time notifications for changes to namespaces, registries, or records.\n\n**Authentication:** Required (Cookie or API Key)\n\n**Request Body:**\n```json\n{\n  \"namespace\": \"namespace-id or domain\",\n  \"registry_name\": \"registry-name\",\n  \"record_name\": \"record-name (optional for registry watch)\",\n  \"registry_tag\": \"tag-name (optional, alternative to namespace/registry)\",\n  \"webhook_url\": \"https://your-app.com/webhook/dedi-updates\",\n  \"webhook_secret\": \"your-webhook-secret\"\n}\n```\n\n**Watch Types (automatically determined):**\n- **registry**: When namespace + registry_name provided (without record_name)\n- **record**: When namespace + registry_name + record_name provided  \n- **registry_tag**: When registry_tag provided (watches all registries with this tag)\n\n**Required Fields:**\n- `webhook_url`: HTTPS URL to receive notifications\n- `webhook_secret`: Secret for webhook verification\n- Either (`namespace` + `registry_name`) OR `registry_tag`\n\n**Success Response (201):**\n```json\n{\n  \"message\": \"Successfully subscribed to watch\",\n  \"data\": {\n    \"id\": \"w_abc123-def4-5678-9012-abcdef123456\",\n    \"namespace_id\": \"ns_example\",\n    \"registry_name\": \"my-registry\",\n    \"record_name\": \"my-record\",\n    \"registry_tag\": null,\n    \"type\": \"record\",\n    \"email\": \"user@example.com\",\n    \"webhook_url\": \"https://your-app.com/webhook\",\n    \"is_active\": true,\n    \"created_at\": \"2024-01-01T00:00:00Z\"\n  }\n}\n```\n\n**💡 USE CASES:**\n- **Real-time Updates**: Get instant notifications when data changes\n- **Registry Monitoring**: Track new records added to registries\n- **Record Changes**: Monitor updates to specific records\n- **Tag-based Watching**: Watch all registries with specific tags\n- **Integration Webhooks**: Trigger external system updates\n- **Data Synchronization**: Keep external systems in sync\n\n**🔔 WEBHOOK NOTIFICATIONS:**\nYour webhook will receive POST requests when changes occur. The payload structure depends on the change type and includes relevant entity data.\n\n**📝 REQUIREMENTS:**\n- Valid webhook URL (must be HTTPS)\n- Target namespace/registry/record must exist and user must have access\n- Webhook secret for payload verification\n- Valid authentication (cookie or API key)\n\n**⏰ SUBSCRIPTION LIFECYCLE:**\n- Subscriptions remain active until manually unsubscribed\n- Use /dedi/unsubscribe to remove subscriptions\n- Use /dedi/subscriptions to list your active subscriptions\n- Expired or invalid subscriptions are cleaned up automatically\n\n**🔐 SECURITY:**\n- Webhook deliveries include signature for verification using webhook_secret\n- Only authenticated users can create subscriptions\n- Users can only subscribe to entities they have access to\n- Rate limiting applies to prevent abuse"
+            "description": "👀 SUBSCRIBE TO WATCH\n\nSubscribe to webhook notifications for namespace, registry, record, or registry-tag events.\n\n**Authentication:** Required (Cookie or API Key)\n\n**Request Body:**\n```json\n{\n  \"namespace\": \"namespace-id or domain\",\n  \"registry_name\": \"registry-name\",\n  \"record_name\": \"record-name\",\n  \"registry_tag\": \"membership\",\n  \"webhook_url\": \"https://your-app.com/webhook/dedi-updates\",\n  \"webhook_secret\": \"whsec_c2VjcmV0\"\n}\n```\n\n**Supported Subscription Types:**\n- `namespace`: provide `namespace` only\n- `registry`: provide `namespace` and `registry_name`\n- `record`: provide `namespace`, `registry_name`, and `record_name`\n- `registry_tag`: provide `registry_tag` only\n\n**Contract Rules:**\n- `webhook_url` and `webhook_secret` are required\n- `registry_tag` cannot be combined with `namespace`, `registry_name`, or `record_name`\n- `record_name` requires `registry_name`\n- `registry_name` requires `namespace`\n\n**Success Response (201):**\n```json\n{\n  \"message\": \"Successfully subscribed to watch\",\n  \"data\": {\n    \"id\": \"w_abc123-def4-5678-9012-abcdef123456\",\n    \"namespace_id\": \"did:cord:namespace:...\",\n    \"registry_name\": \"employee-registry\",\n    \"record_name\": null,\n    \"registry_tag\": null,\n    \"type\": \"registry\",\n    \"email\": \"user@example.com\",\n    \"webhook_url\": \"https://your-app.com/webhook\",\n    \"webhook_secret\": \"whsec_c2VjcmV0\",\n    \"is_active\": true,\n    \"created_at\": \"2026-05-04T08:30:00.000Z\"\n  }\n}\n```\n\n**Lifecycle:**\n- Subscriptions remain active until you unsubscribe or the watched entity is permanently deleted\n- Use `/dedi/unsubscribe` to remove a subscription\n- Use `/dedi/subscriptions` to list current subscriptions"
           },
           "response": []
         },
@@ -5282,7 +5458,7 @@
                 "subscriptions"
               ]
             },
-            "description": "👀 GET USER WATCH SUBSCRIPTIONS\n\nRetrieve all active watch subscriptions for the authenticated user.\n\n**Authentication:** Required (Cookie or API Key)\n\n**Success Response (200):**\n```json\n{\n  \"message\": \"User subscriptions retrieved successfully\",\n  \"data\": [\n    {\n      \"subscription_id\": \"sub_abc123...\",\n      \"watch_type\": \"namespace\",\n      \"target\": \"my-namespace\",\n      \"webhook_url\": \"https://your-app.com/webhook\",\n      \"events\": [\"create\", \"update\", \"delete\"],\n      \"active\": true,\n      \"created_at\": \"2024-01-01T00:00:00Z\",\n      \"expires_at\": \"2024-02-01T00:00:00Z\",\n      \"last_delivery\": \"2024-01-10T15:30:00Z\",\n      \"delivery_count\": 142,\n      \"failure_count\": 2\n    },\n    {\n      \"subscription_id\": \"sub_def456...\",\n      \"watch_type\": \"registry\",\n      \"target\": \"my-registry\",\n      \"webhook_url\": \"https://your-app.com/registry-updates\",\n      \"events\": [\"create\", \"update\"],\n      \"active\": true,\n      \"created_at\": \"2024-01-05T00:00:00Z\",\n      \"expires_at\": \"2024-02-05T00:00:00Z\",\n      \"last_delivery\": \"2024-01-14T09:15:00Z\",\n      \"delivery_count\": 67,\n      \"failure_count\": 0\n    }\n  ]\n}\n```\n\n**📊 SUBSCRIPTION DATA:**\n- **subscription_id**: Unique identifier for the subscription\n- **watch_type**: Type of resource being watched (namespace/registry/record)\n- **target**: ID of the specific resource being monitored\n- **webhook_url**: URL where notifications are delivered\n- **events**: Array of event types being monitored\n- **active**: Whether the subscription is currently active\n- **created_at**: When the subscription was created\n- **expires_at**: When the subscription will automatically expire\n- **last_delivery**: Timestamp of most recent webhook delivery\n- **delivery_count**: Total number of notifications sent\n- **failure_count**: Number of failed delivery attempts\n\n**💡 USE CASES:**\n- **Subscription Management**: View and manage all active watches\n- **Monitoring Dashboard**: Display user's notification preferences\n- **Debugging**: Check subscription status and delivery statistics\n- **Cleanup Planning**: Identify unused or problematic subscriptions\n- **Audit Trail**: Review notification history and patterns\n- **Settings UI**: Build user interface for subscription management\n\n**📈 METRICS PROVIDED:**\n- **Total Active Subscriptions**: Number of currently active watches\n- **Delivery Statistics**: Success and failure rates for each subscription\n- **Resource Distribution**: Breakdown by watch type (namespace/registry/record)\n- **Activity Timeline**: When subscriptions were created and last active\n- **Webhook Health**: Delivery success rates and failure patterns\n\n**🔍 FILTERING & SORTING:**\nResponse includes all user subscriptions. For advanced filtering:\n- Client-side filtering by watch_type, target, or active status\n- Sorting by created_at, expires_at, or delivery statistics\n- Custom grouping by watch type or target resource\n\n**⚠️ SUBSCRIPTION STATUS:**\n- **Active**: Receiving and delivering notifications\n- **Expired**: Past expiration date, no longer delivering\n- **Failed**: Too many delivery failures, temporarily suspended\n- **Inactive**: Manually disabled by user\n\n**Error Cases:**\n- **401**: Unauthorized (invalid or missing token)\n- **500**: Database error or internal server error\n\n**🔐 SECURITY:**\n- Only returns subscriptions owned by authenticated user\n- User isolation ensures data privacy\n- No sensitive webhook content exposed\n- Subscription metadata only (not webhook payloads)"
+            "description": "👀 GET USER WATCH SUBSCRIPTIONS\n\nRetrieve all watch subscriptions for the authenticated user.\n\n**Authentication:** Required (Cookie or API Key)\n\n**Success Response (200):**\n```json\n{\n  \"message\": \"Successfully retrieved subscriptions\",\n  \"data\": [\n    {\n      \"id\": \"w_abc123...\",\n      \"namespace_id\": \"did:cord:...\",\n      \"registry_name\": \"employee-profiles\",\n      \"record_name\": null,\n      \"registry_tag\": null,\n      \"type\": \"registry\",\n      \"email\": \"user@example.com\",\n      \"webhook_url\": \"https://your-app.com/webhook\",\n      \"webhook_secret\": \"whsec_c2VjcmV0\",\n      \"is_active\": true,\n      \"created_at\": \"2026-05-04T08:30:00.000Z\"\n    }\n  ]\n}\n```\n\n**Error Cases:**\n- **401**: Unauthorized (invalid or missing token)\n- **500**: Database error or internal server error"
           },
           "response": []
         }

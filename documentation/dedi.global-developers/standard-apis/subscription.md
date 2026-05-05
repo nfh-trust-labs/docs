@@ -12,14 +12,14 @@ A subscription in DeDi.global is a mechanism that allows you to receive real-tim
 
 **Registry Subscription** - Get notified for all activity within a registry:
 - Registry updates (metadata, description changes)
-- Registry state changes (suspend, reinstate, revoke)
+- Registry lifecycle changes such as inactivation, reactivation, deletion, and restore
 - Record creation (new records added to the registry)
 - Record updates (existing record modifications)  
-- Record state changes (suspend, reinstate, revoke of records)
+- Record deletion and restore events
 
 **Record Subscription** - Get notified for specific record activity:
 - Record updates (content, metadata changes)
-- Record state changes (suspend, reinstate, revoke)
+- Record deletion and restore events
 
 **Registry Tag Subscription** - Monitor all registries with specific tags:
 - Get notified across multiple registries that share a common tag
@@ -322,16 +322,16 @@ When events occur, DeDi will send HTTP POST requests to your webhook URL with th
 ### Registry Events
 - `registry.created` - New registry created
 - `registry.updated` - Registry metadata or description changed
-- `registry.suspended` - Registry suspended
-- `registry.reinstated` - Registry reinstated
-- `registry.revoked` - Registry revoked
+- `registry.inactive` - Registry inactivated
+- `registry.reactive` - Registry reactivated
+- `registry.deleted` - Registry deleted
+- `registry.restored` - Registry restored
 
 ### Record Events  
 - `record.created` - New record added to the registry
 - `record.updated` - Record content or metadata changed
-- `record.suspended` - Record suspended
-- `record.reinstated` - Record reinstated
-- `record.revoked` - Record revoked
+- `record.deleted` - Record deleted
+- `record.restored` - Record restored
 
 ## Webhook Security
 
@@ -420,14 +420,11 @@ app.post('/webhook/dedi-updates', (req, res) => {
     case 'record.updated':
       handleEmployeeUpdate(req.body);
       break;
-    case 'record.suspended':
-      handleRecordSuspension(req.body);
+    case 'record.deleted':
+      handleRecordDeletion(req.body);
       break;
-    case 'record.reinstated':
-      handleRecordReinstatement(req.body);
-      break;
-    case 'record.revoked':
-      handleRecordRevocation(req.body);
+    case 'record.restored':
+      handleRecordRestore(req.body);
       break;
     case 'registry.created':
       handleRegistryCreation(req.body);
@@ -435,14 +432,17 @@ app.post('/webhook/dedi-updates', (req, res) => {
     case 'registry.updated':
       handleRegistryUpdate(req.body);
       break;
-    case 'registry.suspended':
-      handleRegistrySuspension(req.body);
+    case 'registry.inactive':
+      handleRegistryInactivation(req.body);
       break;
-    case 'registry.reinstated':
-      handleRegistryReinstatement(req.body);
+    case 'registry.reactive':
+      handleRegistryReactivation(req.body);
       break;
-    case 'registry.revoked':
-      handleRegistryRevocation(req.body);
+    case 'registry.deleted':
+      handleRegistryDeletion(req.body);
+      break;
+    case 'registry.restored':
+      handleRegistryRestore(req.body);
       break;
   }
   

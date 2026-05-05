@@ -60,7 +60,7 @@ Each entity type uses specific fields for digest calculation, exactly matching t
 - `tag` - Schema tag identifier
 - `version` - Version string
 - `version_count` - Numeric version counter
-- `state` - Registry state (live, suspended, etc.)
+- `state` - Registry state (`live` or `inactive`)
 - `genesis` - Creation timestamp (ISO string format)
 - `created_by` - Creator's DID identifier
 - `meta` - Metadata object
@@ -75,7 +75,7 @@ Each entity type uses specific fields for digest calculation, exactly matching t
 - `details` - Record data content
 - `version` - Version string
 - `version_count` - Numeric version counter
-- `state` - Record state (live, draft, etc.)
+- `state` - Record state (`draft` or `live`)
 - `genesis` - Creation timestamp (ISO string format)
 - `created_by` - Creator's DID identifier
 - `meta` - Metadata object

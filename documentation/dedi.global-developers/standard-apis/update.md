@@ -180,7 +180,7 @@ const data = await response.json();
 **Success Response (200):**
 ```typescript
 {
-  "message": "registry updated",
+  "message": "Registry updated",
   "data": {
     "digest": "0x2b3c4d5e6f7a..."
   }
@@ -212,9 +212,7 @@ const data = await response.json();
 **State Validation:**
 Registry updates are only allowed for registries in specific states:
 - ✅ **LIVE**: Full updates permitted
-- ❌ **REVOKED**: Updates not allowed
-- ❌ **SUSPENDED**: Updates not allowed  
-- ❌ **EXPIRED**: Updates not allowed
+- ❌ **INACTIVE**: Updates not allowed
 
 **Important Notes:**
 - **Tag Validation**: New tags must exist in the bootstrap schema registry
@@ -303,13 +301,21 @@ const response = await fetch('https://api.dedi.global/dedi/edutech-university/st
 const data = await response.json();
 ```
 
-**Success Response (200):**
+**Success Responses (200):**
 ```typescript
 {
   "message": "Record updated", 
   "data": {
     "digest": "0x3c4d5e6f7a8b..."
   }
+}
+```
+
+For draft records, the response is:
+
+```typescript
+{
+  "message": "Record edit successful"
 }
 ```
 
@@ -355,9 +361,6 @@ For records in **LIVE** state:
 Record updates are only allowed for specific states:
 - ✅ **DRAFT**: Direct updates allowed
 - ✅ **LIVE**: Versioned updates allowed
-- ❌ **EXPIRED**: Updates not allowed
-- ❌ **REVOKED**: Updates not allowed
-- ❌ **SUSPENDED**: Updates not allowed
 
 **Important Notes:**
 - **Required Field**: `details` must be provided

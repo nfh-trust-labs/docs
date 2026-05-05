@@ -14,7 +14,7 @@ The DeDi.global Postman collection provides a comprehensive set of pre-configure
 
 1. **Core Operations:** Authentication, Namespaces, Registries, Records (CRUD)
 2. **Advanced Features:** Domain Verification, Bulk Operations (CSV import/export), Search & Query, Webhooks, Delegation & Access Control
-3. **Administrative:** State Management (suspend/reinstate/revoke), Version Control
+3. **Administrative:** Lifecycle and recovery operations, Version Control
 
 ### Features
 

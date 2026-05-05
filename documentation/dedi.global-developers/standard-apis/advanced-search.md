@@ -1,8 +1,8 @@
 # Advanced Search APIs
 
-DeDi.global provides powerful search capabilities across records within a namespace. The search functionality allows you to query records using various criteria including registry filtering, field-specific searches, and nested JSON field exploration.
+DeDi.global provides powerful search capabilities across records within a namespace. The search functionality allows you to query records using registry filters, field-specific criteria, and nested JSON field exploration.
 
-**Authentication**: 🔒 Search API requires authentication via API key.
+**Authentication**: 🌐 The search endpoint is available as a public read API. Authentication is optional.
 
 ## Core Search Concepts
 
@@ -86,7 +86,7 @@ Consider this employee profile record stored in the `my-company` namespace:
       "tags": {
         "category": "employee",
         "level": "senior", 
-        "team": "backend"
+        "team": "platform"
       },
       "permissions": ["read", "write", "admin"]
     }
@@ -156,7 +156,7 @@ GET /dedi/search/my-company?metadata.tags.category=employee
 
 **Search by team:**
 ```http
-GET /dedi/search/my-company?metadata.tags.team=backend
+GET /dedi/search/my-company?metadata.tags.team=platform
 ```
 *This searches within `record.details.metadata.tags.team`*
 
@@ -252,7 +252,7 @@ Here's what a successful search response looks like when it returns our sample r
           "tags": {
             "category": "employee",
             "level": "senior",
-            "team": "backend"
+            "team": "platform"
           },
           "permissions": ["read", "write", "admin"]
         }
@@ -315,7 +315,7 @@ Here's what a successful search response looks like when it returns our sample r
 
 **Employee Directory Search:**
 - Find employees by name, email, or department: `?profile.firstName=John` or `?email=john.doe%40company.com`
-- Locate team members: `?metadata.tags.team=backend` or `?profile.department=Engineering`
+- Locate team members: `?metadata.tags.team=platform` or `?profile.department=Engineering`
 - Find employees by location: `?contact.address.city=San%20Francisco`
 
 **HR Management:**
