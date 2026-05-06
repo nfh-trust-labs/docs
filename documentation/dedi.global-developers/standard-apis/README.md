@@ -52,7 +52,7 @@ const response = await fetch('https://api.dedi.global/endpoint', {
 
 ## API Sections Overview
 
-### [Publish APIs](documentation/dedi.global-developers/standard-apis/publish.md)
+### [Publish APIs](publish.md)
 
 Create and manage the core components of your data infrastructure on DeDi.global.
 
@@ -62,7 +62,7 @@ Create and manage the core components of your data infrastructure on DeDi.global
 * **Bulk Operations**: Handle large-scale data uploads via CSV files
 * **Data Export**: Extract registry data for analysis and backup
 
-### [Access APIs](documentation/dedi.global-developers/standard-apis/access.md)
+### [Access APIs](access.md)
 
 Query and retrieve data from the DeDi.global network with powerful search capabilities.
 
@@ -71,7 +71,7 @@ Query and retrieve data from the DeDi.global network with powerful search capabi
 * **Version History**: Access historical data and track changes over time
 * **Schema Discovery**: Find registries by standardized schema tags
 
-### [Domain Verification](documentation/dedi.global-developers/standard-apis/domain.md)
+### [Domain Verification](domain.md)
 
 Establish domain ownership to build trust and enhance namespace credibility.
 
@@ -80,7 +80,7 @@ Establish domain ownership to build trust and enhance namespace credibility.
 * **Trust Enhancement**: Increase user confidence through verified domain status
 * **Verification Monitoring**: Track and confirm verification progress
 
-### [Delegation Management](documentation/dedi.global-developers/standard-apis/delegation.md)
+### [Delegation Management](delegation.md)
 
 Enable collaborative access and team-based workflows through controlled permission sharing.
 
@@ -89,7 +89,7 @@ Enable collaborative access and team-based workflows through controlled permissi
 * **Access Control**: Manage team permissions with principle of least privilege
 * **Organizational Workflows**: Support complex organizational structures and project-based access patterns
 
-### [Update Management](documentation/dedi.global-developers/standard-apis/update.md)
+### [Update Management](update.md)
 
 Modify existing data while maintaining integrity and audit trails.
 
@@ -97,7 +97,7 @@ Modify existing data while maintaining integrity and audit trails.
 * **Registry Modifications**: Update description and metadata
 * **Namespace Changes**: Modify namespace properties and settings
 
-### [State Management](documentation/dedi.global-developers/standard-apis/state-management.md)
+### [State Management](state-management.md)
 
 Control the lifecycle and availability of your data.
 
@@ -105,7 +105,7 @@ Control the lifecycle and availability of your data.
 * **Recovery Operations**: Delete and restore namespaces, registries, and records
 * **Retention Window**: Restore deleted entities before permanent archival
 
-### [Advanced Search](documentation/dedi.global-developers/standard-apis/advanced-search.md)
+### [Advanced Search](advanced-search.md)
 
 Powerful search capabilities across the entire namespaces.
 
@@ -113,7 +113,7 @@ Powerful search capabilities across the entire namespaces.
 * **Filtering Options**: Apply complex filters to narrow results
 * **Aggregation Queries**: Perform analytical operations on data sets
 
-### [Subscription](documentation/dedi.global-developers/standard-apis/subscription.md)
+### [Subscription](subscription.md)
 
 Stay informed about changes to data you care about.
 
@@ -121,7 +121,7 @@ Stay informed about changes to data you care about.
 * **Event Filtering**: Subscribe to specific types of updates
 * **Subscription Management**: Control your notification preferences
 
-### [Lookup Verification](documentation/dedi.global-developers/standard-apis/lookup-verification.md)
+### [Lookup Verification](lookup-verification.md)
 
 Advanced verification and data integrity operations.
 
@@ -158,6 +158,6 @@ Common HTTP status codes:
 ## Getting Started
 
 1. [Obtain your API key](./#authentication) from the DeDi.global platform
-2. Start with [Publish APIs](documentation/dedi.global-developers/standard-apis/publish.md) to create your first namespace and registry
-3. Use [Access APIs](documentation/dedi.global-developers/standard-apis/access.md) to query and retrieve your data
-4. Explore [advanced features](documentation/dedi.global-developers/standard-apis/domain.md) like domain verification and webhooks
+2. Start with [Publish APIs](publish.md) to create your first namespace and registry
+3. Use [Access APIs](access.md) to query and retrieve your data
+4. Explore [advanced features](domain.md) like domain verification and webhooks
