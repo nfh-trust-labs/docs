@@ -38,6 +38,7 @@
   * [State Management](dedi.global-developers/standard-apis/state-management.md)
   * [Advanced Search](dedi.global-developers/standard-apis/advanced-search.md)
   * [Subscription (Watch)](dedi.global-developers/standard-apis/subscription.md)
+  * [Stats](dedi.global-developers/standard-apis/stats.md)
   * [Lookup Verification](dedi.global-developers/standard-apis/lookup-verification.md)
 * [Guides](dedi.global-developers/guides/README.md)
   * [Schema design](dedi.global-developers/guides/schema-design.md)

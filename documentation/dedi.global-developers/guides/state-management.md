@@ -25,6 +25,47 @@ DeDi.global uses a compact lifecycle model for namespaces, registries, and recor
 - Use the restore APIs to recover deleted data within the retention window.
 - The current implementation keeps deleted entities restorable for a configurable retention period with a default of `3` days.
 
+### Deleting via the UI
+
+Each entity type has a specific deletion flow in the publish UI:
+
+#### Delete Namespace
+
+1. Click **Delete** on a namespace card
+2. A confirmation dialog appears with three options:
+   - **Export Namespace** — downloads a `.zip` archive containing all registries and records. Use this to create a backup before deletion.
+   - **Delete Namespace** — permanently deletes the namespace, including all registries and records. This action cannot be undone.
+   - **Cancel** — closes the dialog without taking any action.
+
+> **Tip:** Always export your namespace data before deletion if you may need it in the future.
+
+#### Delete Registry
+
+A two-step confirmation process:
+
+1. **First dialog** — "Are you sure?" warning with three options:
+   - **Export Registry** — downloads a CSV export of the registry and its records
+   - **Delete** — proceeds to the confirmation step
+   - **Cancel** — closes the dialog
+
+2. **Second dialog** — Type the registry name to confirm deletion, then click **Confirm Delete**.
+
+> **Note:** Deleted registries and records are moved to the recovery bin and can be restored within the retention window (default: 3 days).
+
+#### Delete Record
+
+A two-step confirmation process:
+
+1. **First dialog** — "Are you sure?" warning with two options:
+   - **Delete** — proceeds to the confirmation step
+   - **Cancel** — closes the dialog
+
+2. **Second dialog** — Type `DELETE-RECORD` to confirm deletion, then click **Confirm Delete**.
+
+### Deleting via the API
+
+Use the deletion endpoints to programmatically remove entities. Deleted entities are moved to a recovery surface and can be restored within the retention window (default: 3 days).
+
 ## Related references
 
 - API reference: [State Management APIs](../standard-apis/state-management.md)

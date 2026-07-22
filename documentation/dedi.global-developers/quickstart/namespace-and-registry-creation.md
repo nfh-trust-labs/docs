@@ -15,8 +15,8 @@ DeDi.global is a ready-to-use SaaS implementing the open DeDi protocol, offered 
 ### <mark style="color:$tint;">1. Account Setup</mark>
 
 1. **Register** at [publish.dedi.global](https://publish.dedi.global/) with any email address.
-2. **Verify your account** — click the authentication link sent to your email.
-3. **Log in** — returning users authenticate via password + a one-time email link (MFA).
+2. **Verify your account** — click the magic link sent to your email.
+3. **Log in** — enter your email and password; a magic link will be sent to your email for authentication.
 4. **Generate an API Key** _(optional)_ — for secure programmatic access via the DeDi APIs.
 
 ### <mark style="color:$tint;">2. Namespace Setup</mark>

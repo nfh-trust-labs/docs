@@ -20,8 +20,8 @@ Before using any DeDi.global APIs, you need to obtain an API key for authenticat
    * **First-time users**: Click "Register" and provide:
      * Name
      * Email address
-     * Password (minimum 6 characters with special characters)
-   * **Existing users**: Click "Login" with your credentials
+     * Password (minimum 6 characters with at least one special character)
+   * **Existing users**: Click "Login" with your email and password — a magic link will be sent to your email for authentication
 3. **Email Verification**\
    Check your email for a magic link and click it to verify your account (Multi-Factor Authentication)
 4. **Generate API Key**
@@ -118,8 +118,15 @@ Powerful search capabilities across the entire namespaces.
 Stay informed about changes to data you care about.
 
 * **Webhook Integration**: Receive real-time notifications of changes
-* **Event Filtering**: Subscribe to specific types of updates
+* **Event Filtering**: Subscribe to specific types of updates across namespaces, registries, and records
 * **Subscription Management**: Control your notification preferences
+* **Webhook Delivery Logs**: Track delivery status of webhook notifications
+
+### [Stats API](stats.md)
+
+View aggregate platform statistics.
+
+* **Platform Counts**: Get total counts of namespaces, registries, records, and users
 
 ### [Lookup Verification](lookup-verification.md)
 

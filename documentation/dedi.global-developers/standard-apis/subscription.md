@@ -319,6 +319,11 @@ When events occur, DeDi will send HTTP POST requests to your webhook URL with th
 
 ## Event Types
 
+### Namespace Events
+- `namespace.deleted` - Namespace deleted
+- `namespace.restored` - Namespace restored
+- `namespace.verification.removed` - Domain verification removed from namespace (e.g. after failed re-verification)
+
 ### Registry Events
 - `registry.created` - New registry created
 - `registry.updated` - Registry metadata or description changed
@@ -326,12 +331,20 @@ When events occur, DeDi will send HTTP POST requests to your webhook URL with th
 - `registry.reactive` - Registry reactivated
 - `registry.deleted` - Registry deleted
 - `registry.restored` - Registry restored
+- `registry.revoked` - Registry permanently revoked on chain
 
-### Record Events  
+### Record Events
 - `record.created` - New record added to the registry
 - `record.updated` - Record content or metadata changed
 - `record.deleted` - Record deleted
 - `record.restored` - Record restored
+- `record.suspended` - Record suspended
+- `record.reinstated` - Suspended record reinstated
+- `record.revoked` - Record permanently revoked on chain
+
+### Domain Events
+- `domain.added` - Domain verification added to namespace
+- `verification.removed` - Domain verification source removed
 
 ## Webhook Security
 

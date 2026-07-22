@@ -144,14 +144,16 @@ const response = await fetch(`https://api.dedi.global/dedi/employee-directory/cr
 ```
 
 **Schema Tags**:
-DeDi.global currently provides 5 pre-built schemas out of the box:
+DeDi.global currently provides 7 pre-built schemas out of the box:
 - `membership` - Identity and membership data schemas
 - `public_key` - Cryptographic public key schemas
 - `revoke` - Revocation and status tracking schemas
 - `beckn_subscriber` - Beckn protocol subscriber information
 - `beckn_subscriber_reference` - Beckn protocol subscriber reference data
+- `public_rule_set` - Public rule set schemas
+- `public_data_set` - Public data set schemas
 
-**Note**: When using any of the pre-built schema tags (`membership`, `public_key`, `revoke`, `beckn_subscriber`, `beckn_subscriber_reference`), provide `tag` and omit `schema`. For custom registries, provide `schema` and omit `tag`.
+**Note**: When using any of the pre-built schema tags, provide `tag` and omit `schema`. For custom registries, provide `schema` and omit `tag`.
 
 *For detailed information about these pre-built schemas, please reach out to our support team.*
 

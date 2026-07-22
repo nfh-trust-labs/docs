@@ -6,11 +6,12 @@ The Access APIs provide comprehensive data retrieval capabilities for the DeDi.g
 
 ## Overview
 
-Access APIs are organized into three main categories:
+Access APIs are organized into four main categories:
 
 - **Lookup APIs** - Retrieve detailed information about specific resources
 - **Query APIs** - Search and filter collections of resources with pagination
 - **Version APIs** - Manage and retrieve historical versions of resources
+- **Record Lookup APIs** - Look up records by ID or creator profile
 
 These access APIs support both current and historical data queries.
 
@@ -242,6 +243,53 @@ const data = await response.json();
 - `400` - Missing required parameters
 - `404` - Namespace, registry, or record not found
 - `500` - Internal server error
+
+### Lookup Record by Record ID
+
+Look up a record directly by its CORD record ID, without needing to know the namespace, registry, or record name.
+
+**Endpoint:** `GET /dedi/lookup-by-record-id/{record_id}`
+
+**Parameters:**
+- `record_id` (path, required): The CORD record ID (e.g., `did:cord:3aRecDef...`)
+
+**Example Request:**
+```typescript
+const response = await fetch('https://api.dedi.global/dedi/lookup-by-record-id/did:cord:3aRecDef...', {
+  method: 'GET'
+});
+
+const data = await response.json();
+```
+
+**Use Cases:**
+- Look up a record when you only have the record ID (e.g., from a webhook payload)
+- Cross-reference records across namespaces
+- Verify record existence by ID
+
+### Lookup Record by Creator Profile
+
+Look up a record by its creator's profile ID, namespace, registry, and record name.
+
+**Endpoint:** `GET /dedi/lookup-by-profile/{namespace}/{registry_name}/{record_name}`
+
+**Parameters:**
+- `namespace` (path, required): Namespace ID or domain
+- `registry_name` (path, required): Registry name
+- `record_name` (path, required): Record name
+
+**Example Request:**
+```typescript
+const response = await fetch('https://api.dedi.global/dedi/lookup-by-profile/my-namespace/user-registry/john-doe', {
+  method: 'GET'
+});
+
+const data = await response.json();
+```
+
+**Use Cases:**
+- Retrieve a record when you know the creator's profile context
+- Verify record ownership by profile
 
 ## Query APIs
 

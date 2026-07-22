@@ -2,7 +2,7 @@
 
 Each registry in DeDi defines a schema — the structure of the records it contains.
 
-When creating a registry, you provide a schema. There are two options:
+When creating a registry, you provide a schema. There are three options:
 
 #### **Option 1: Use a pre-defined schema tag.**&#x20;
 
@@ -12,9 +12,54 @@ Each tag points to a JSON Schema stored in the system. To list available tags:
 GET /dedi/lookup/dedi.global/Schemas
 ```
 
-Available templates include: Membership, Public Key, Revocation, Beckn.
+Available templates include:
 
-#### **Option 2: Provide a custom JSON Schema.**&#x20;
+* `membership` - Identity and membership data schemas
+* `public_key` - Cryptographic public key schemas
+* `revoke` - Revocation and status tracking schemas
+* `beckn_subscriber` - Beckn protocol subscriber information
+* `beckn_subscriber_reference` - Beckn protocol subscriber reference data
+* `public_rule_set` - Public rule set schemas
+* `public_data_set` - Public data set schemas
+
+#### **Option 2: Build a custom schema using the Visual Schema Builder.**&#x20;
+
+The DeDi.global publish UI includes a built-in schema builder with two modes:
+
+##### Form Builder
+
+A visual form-based editor where you define fields without writing JSON:
+
+- **Field name** — the property key (alphanumeric, no spaces)
+- **Type** — `string`, `number`, `integer`, `boolean`, `file`, `object`, or `array`
+- **Required** — whether the field must be present in every record
+- **Nullable** — whether the field accepts `null` values
+- **Description** — optional help text for the field
+- **Default value** — optional default value
+
+Type-specific options:
+- **String**: format (`email`, `date`, `date-time`, `uri`, `uuid`, `data-url`), pattern (regex), min/maxLength, enum values
+- **Number/Integer**: min/max value, multipleOf
+- **Array**: item type (with nested field definitions), min/max items, unique items
+- **Object**: nested fields (recursive)
+- **Root strict mode**: reject unlisted fields at the schema root
+
+A live JSON Schema preview updates as you build. Click **Use Schema** to apply it.
+
+##### Paste JSON
+
+Direct input for JSON Schema Draft-7 documents:
+
+- Paste your schema into the editor
+- Live syntax validation with valid/invalid indicators
+- Schema preview panel updates in real-time
+- Click **Use Schema** to apply the parsed schema
+
+##### Publish Schema
+
+Both modes include a **Publish Schema** button that opens a GitHub issue to request making your schema public. Once approved, your schema becomes a discoverable tag available to all DeDi.global users.
+
+#### **Option 3: Provide a raw JSON Schema.**&#x20;
 
 JSON Schema Draft 7 is supported.
 
