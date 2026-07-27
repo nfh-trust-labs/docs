@@ -46,6 +46,7 @@
   * [Delegation Guide](dedi.global-developers/guides/delegation-guide.md)
   * [State management](dedi.global-developers/guides/state-management.md)
   * [Watch Feature](dedi.global-developers/guides/watch-feature.md)
+  * [X402 Agent-Ready Authentication](dedi.global-developers/guides/x402-authentication.md)
 
 ## API Tools & Resources
 
