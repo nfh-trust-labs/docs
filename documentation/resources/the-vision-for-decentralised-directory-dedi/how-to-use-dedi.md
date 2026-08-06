@@ -1,18 +1,40 @@
 ---
-description: Three ways to put your public data on tamper-proof, verifiable infrastructure
+description: Four ways to put your public data on tamper-proof, verifiable infrastructure
 ---
 
 # How to Use DeDi
 
-DeDi turns any public registry — entity lists, public keys, schemas, credential status — into machine-readable, cryptographically verifiable records accessible via a single API. All data on DeDi is public data. There is no vendor lock-in: the protocol is open, the data is portable, and you can leave at any time.
+DeDi turns any public registry — entity lists, public keys, schemas, credential status — into machine-readable, cryptographically verifiable records. All data on DeDi is public data. There is no vendor lock-in: the protocol is open, the data is portable, and you can leave at any time.
 
-> _To accelerate and simplify adoption,_ [_dedi.global_](http://dedi.global)_, is offered by the_ [_Network for Humanity Foundation_](https://networksforhumanity.org/) _as a ready to use, Universal Digital Infrastructure, in alignment with DPI (digital public infrastructure)_ [_principles_](https://docs.cdpi.dev/the-dpi-wiki/dpi-tech-architecture-principles) _. This philanthropic initiative allows registrars to effortlessly publish and manage their directories using an open, on chain infrastructure, —complementing and fully aligned with the open DeDi protocol._
+**You adopt DeDi by publishing signed DeDi files.** Where those files live is a deployment choice, not a trust decision: a verifier checks your signature against the signing key declared at your own domain, whoever serves the bytes. The options below differ in who does the hosting and the re-issuing — not in what a relying party gets.
+
+> _For registrars who would rather not host and manage signed files themselves,_ [_dedi.global_](http://dedi.global) _is offered by the_ [_Network for Humanity Foundation_](https://networksforhumanity.org/) _as a ready to use, Universal Digital Infrastructure, in alignment with DPI (digital public infrastructure)_ [_principles_](https://docs.cdpi.dev/the-dpi-wiki/dpi-tech-architecture-principles)_. This philanthropic initiative allows registrars to effortlessly publish and manage their directories using an open, on chain infrastructure — complementing and fully aligned with the open DeDi protocol._
 
 ## Choose Your Path
 
 <details>
 
-<summary><mark style="color:$primary;background-color:orange;"><strong>Option A: Publish on DeDi.global + mirror on your own website</strong></mark></summary>
+<summary><mark style="color:$primary;background-color:orange;"><strong>Option A: Publish signed files on your own domain</strong></mark></summary>
+
+> _Protocol-native — your data on your domain, no server to run_
+
+Sign one DeDi file per directory, serve a signed `/.well-known/dedi.index.json` declaring your signing key, and host both on infrastructure you already have — your website, a source repository, or any static host. Anyone can verify your directories end to end from the files alone; DeDi servers can crawl, verify, and index them so consumers can query them through a standard API.
+
+| Setup effort        | Hours to days. Generate a signing key, produce the files, wire signing into whatever already updates the data.                                                                        |
+| ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Infrastructure cost | Zero to minimal. Static JSON on hosting you already run.                                                                                                                            |
+| Maintenance         | Yours: re-issue on a cadence so `next_update` stays fresh, and manage your signing key through your own well-known.                                                                 |
+| Lock-in risk        | None — there is no operator in the path at all.                                                                                                                                     |
+| What you get        | Publisher-signed, offline-verifiable directories on your own domain; self-service key rotation and revocation; no dependency on any operator.                                        |
+| Note                | Files published this way are verifiable today by any conformant verifier. Indexing by dedi.global's APIs arrives with the crawler, which is [in development](../publishing-dedi-files/dedi.global-and-origin-published-files.md). |
+
+<a href="../publishing-dedi-files/" class="button primary">How to publish DeDi files</a>
+
+</details>
+
+<details>
+
+<summary><mark style="color:$primary;background-color:orange;"><strong>Option B: Publish on DeDi.global + mirror on your own website</strong></mark></summary>
 
 > _Recommended as phase 0  —  Best of both worlds_
 
@@ -29,7 +51,7 @@ Publish your registries on DeDi.global (free, instant, zero infrastructure) and 
 
 <details>
 
-<summary><mark style="color:$primary;background-color:orange;"><strong>Option B: Publish on DeDi.global only</strong></mark></summary>
+<summary><mark style="color:$primary;background-color:orange;"><strong>Option C: Publish on DeDi.global only</strong></mark></summary>
 
 
 
@@ -41,41 +63,44 @@ Publish your registries directly on DeDi.global. Anyone can query them via the D
 | ------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
 | Infrastructure cost | Zero.                                                                                                                                  |
 | Maintenance         | Zero.                                                                                                                                  |
-| Lock-in risk        | None. Same portability guarantees as Option A.                                                                                         |
+| Lock-in risk        | None. Same portability guarantees as Option B.                                                                                         |
 | Trade-off           | Your existing website doesn’t serve the data directly - consumers use the DeDi API. You can add website integration later at any time. |
 
 </details>
 
 <details>
 
-<summary><mark style="color:$primary;background-color:orange;"><strong>Option C: Spin up your own DeDi node</strong></mark></summary>
+<summary><mark style="color:$primary;background-color:orange;"><strong>Option D: Operate your own DeDi server</strong></mark></summary>
 
 > Maximum control  —  For organizations with specific infrastructure requirements
 
-Deploy the open-source DeDi protocol on your own infrastructure. You run the node, you control the data, you manage the uptime. Records anchored on your node are interoperable with DeDi.global and any other DeDi node — the protocol is the same everywhere. This option is for organizations that have regulatory, sovereignty, or policy reasons to self-host.
+Deploy the open-source DeDi protocol on your own infrastructure. You run the server, you control the data, you manage the uptime. Records anchored on your server are interoperable with DeDi.global and any other DeDi implementation — the protocol is the same everywhere. This option is for organizations that have regulatory, sovereignty, or policy reasons to self-host, or that want to index and serve other publishers' directories at scale.
 
-| Setup effort        | Weeks to Months. Requires DevOps capacity to deploy and configure the node and capacity to ensure transparent cryptographic validity               |
-| ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Infrastructure cost | Hosting, monitoring, and maintenance costs.                                                                                                        |
-| Maintenance         | Ongoing. You are responsible for uptime, security patches, and upgrades.                                                                           |
-| Lock-in risk        | None. Same open protocol. You can migrate to DeDi.global or another node at any time.                                                              |
-| When to choose this | Only if you have a hard requirement to self-host. For most organizations, Option A or B delivers the same guarantees with zero operational burden. |
+**Running a server is a separate role, not a requirement of adoption.** If your goal is only to publish your own directories, Option A gives you the same guarantees with none of the operational burden.
+
+| Setup effort        | Weeks to Months. Requires DevOps capacity to deploy and configure the server and capacity to ensure transparent cryptographic validity                        |
+| ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Infrastructure cost | Hosting, monitoring, and maintenance costs.                                                                                                                        |
+| Maintenance         | Ongoing. You are responsible for uptime, security patches, and upgrades.                                                                                           |
+| Lock-in risk        | None. Same open protocol. You can migrate to DeDi.global or another server at any time.                                                                            |
+| When to choose this | Only if you have a hard requirement to self-host, or you intend to serve many publishers. For most organizations, Option A, B, or C delivers the same guarantees with far less operational burden. |
 
 </details>
 
 ## At a Glance
 
-| Metric               | Option A: DeDi.global + Your Site | Option B: DeDi.global Only |       Option C: Own Node       |
-| -------------------- | :-------------------------------: | :------------------------: | :----------------------------: |
-| Setup time           |              Minutes              |           Minutes          |         Weeks - Months         |
-| Infrastructure cost  |                Zero               |            Zero            |             You pay            |
-| Maintenance          |                Zero               |            Zero            |          You maintain          |
-| On-chain anchoring   |                 ✓                 |              ✓             | Depends on your implementation |
-| Cryptographic proofs |                 ✓                 |              ✓             | Depends on your implementation |
-| Revocation registry  |                 ✓                 |              ✓             |                ✓               |
-| Sub-200ms API        |                 ✓                 |              ✓             |      Depends on your infra     |
-| Data on your domain  |                 ✓                 |              ✘             |                ✓               |
-| Data portability     |                Full               |            Full            |              Full              |
+| Metric               | A: Your own domain               | B: DeDi.global + Your Site | C: DeDi.global Only |      D: Own Server             |
+| -------------------- | :------------------------------: | :------------------------: | :-----------------: | :----------------------------: |
+| Setup time           |          Hours - Days            |           Minutes          |       Minutes       |         Weeks - Months         |
+| Infrastructure cost  |          Zero - Minimal          |            Zero            |         Zero        |             You pay            |
+| Maintenance          |        You re-issue & sign       |            Zero            |         Zero        |          You maintain          |
+| Publisher signature  |                 ✓                |              ✓             |          ✓          |                ✓               |
+| Offline verification |                 ✓                |         Via the API        |     Via the API     | Depends on your implementation |
+| On-chain anchoring   |          Not by itself           |              ✓             |          ✓          | Depends on your implementation |
+| Revocation registry  |                 ✓                |              ✓             |          ✓          |                ✓               |
+| Sub-200ms API        |        Via a DeDi server         |              ✓             |          ✓          |      Depends on your infra     |
+| Data on your domain  |                 ✓                |              ✓             |          ✘          |                ✓               |
+| Data portability     |               Full               |            Full            |         Full        |              Full              |
 
 ## The Bottom Line
 
@@ -83,6 +108,6 @@ Your data is already public. DeDi makes it trustworthy and discoverable.
 
 If you publish public registries today — entity lists, public keys, schemas, credential status, authorization records — they are already meant to be accessible. The question is not whether to share them, but whether consumers can trust what they find.
 
-DeDi.global adds cryptographic proof, tamper-evidence, versioning, and a universal API to data you are already publishing. It costs nothing, requires no infrastructure, creates no vendor dependency, and can be reversed at any time.
+DeDi adds cryptographic proof, tamper-evidence, and a universal way to discover and verify data you are already publishing. It costs nothing, creates no vendor dependency, and can be reversed at any time.
 
-For most organizations, Option A (DeDi.global + your website) or Option B (DeDi.global only) is the obvious starting point. You can always upgrade to a self-hosted node later if your requirements demand it.
+Choose **Option A** if the data should live on your own domain and you can sign and re-issue it there. Choose **Option B or C** if you would rather someone else carried the hosting, signing, and anchoring. Either way, you can move later: the files, the records, and the guarantees are the same.

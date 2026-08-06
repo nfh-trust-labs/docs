@@ -18,9 +18,45 @@ Yes — DeDi is designed for public registries. Lookup and Query APIs are public
 
 DeDi is not a blockchain. It is a directory protocol with a RESTful API. However, every entry's cryptographic proof is anchored on the CORD blockchain to provide tamper-evidence and auditability. You interact with DeDi via standard HTTPS APIs, not blockchain transactions.
 
-**Q: Can I run my own DeDi node?**&#x20;
+**Q: Do I need to run a server to adopt DeDi?**&#x20;
 
-DeDi is built on the open Decentralized Directory Protocol (DDP). Anyone can implement the protocol independently. DeDi.global is one implementation — not the only one.
+No. You adopt DeDi by publishing signed DeDi files — one file per directory, plus a signed manifest at `/.well-known/dedi.index.json` declaring your signing key — on a domain you control. Operating a server is a separate, optional role. See [Publishing DeDi files](../resources/publishing-dedi-files/).
+
+**Q: Can I run my own DeDi server?**&#x20;
+
+Yes. DeDi is built on the open Decentralized Directory Protocol (DDP). Anyone can implement the protocol independently. DeDi.global is one implementation — not the only one. Running a server makes sense if you want to index and serve many publishers' directories, or you have sovereignty requirements; it is not needed to publish your own.
+
+***
+
+#### Publishing on your own domain
+
+**Q: What do I have to publish?**&#x20;
+
+Two signed artifacts: one DeDi file per directory (a self-contained JSON document holding the registry and its records), and a manifest at `/.well-known/dedi.index.json` that declares your current signing key(s) and lists your files. Both are ordinary static JSON — any web server, object store, or source repository that serves files over HTTPS will do.
+
+**Q: Does DeDi.global ever see my signing key?**&#x20;
+
+No. Publishers sign locally, and only the **public** key is ever published — it is embedded in your files and declared in your manifest. No DeDi server receives, stores, or logs private signing material. This is a hard invariant of the protocol.
+
+**Q: How do I rotate or revoke a signing key?**&#x20;
+
+By editing your own manifest. Add the new key to `keys` to rotate, and remove a key to revoke it: files signed by a removed key immediately fail verification everywhere, including in cached and relayed copies, because presence in `keys` *is* validity. No ticket, no operator, no third party.
+
+**Q: How does anyone find my files?**&#x20;
+
+Two ways: a server that reaches your domain fetches `/.well-known/dedi.index.json` and learns everything you publish; and your domain can be added to the public discovery list (`domains.txt`) in the [protocol repository](https://github.com/LF-Decentralized-Trust-labs/decentralized-directory-protocol), which servers poll. Being on the list confers discovery, never trust — verification always runs against your own signed well-known.
+
+**Q: Does DeDi.global index files published on my own domain today?**&#x20;
+
+Not yet. The publishing model is part of the protocol and works today — your files are independently verifiable by anyone. The crawler that ingests origin-published files into DeDi.global's index and APIs is in development; see [dedi.global and origin-published files](../resources/publishing-dedi-files/dedi.global-and-origin-published-files.md).
+
+**Q: If I publish on my own domain, do I still get on-chain anchoring?**&#x20;
+
+Not by itself. Origin-published files carry your own signature, which gives integrity and authenticity offline. CORD anchoring is something DeDi.global adds to content published through it.
+
+**Q: I already publish on DeDi.global. Do I need to change anything?**&#x20;
+
+No. The publishing model is additive: the information model, the APIs, and everything you have published stay exactly as they are.
 
 ***
 
@@ -76,7 +112,9 @@ The upload will fail. Schema consistency is required — your CSV column headers
 
 **Q: How do I verify that a DeDi entry hasn't been tampered with?**&#x20;
 
-Every DeDi entry includes a cryptographic proof (BLAKE2 H256 digest) anchored on the CORD blockchain. You can verify by recalculating the digest from the entry's fields and comparing it to the proof. You can also verify directly on-chain via [apps.cord.network](https://apps.cord.network/).
+Every DeDi.global entry includes a cryptographic proof (BLAKE2 H256 digest) anchored on the CORD blockchain. You can verify by recalculating the digest from the entry's fields and comparing it to the proof. You can also verify directly on-chain via [apps.cord.network](https://apps.cord.network/).
+
+For a directory published as DeDi files on a publisher's own domain, verification is the protocol's five-step check instead: shape, signature over the JCS-canonicalized document, the signing key's presence in the publisher's `/.well-known/dedi.index.json`, freshness, and registry state. See [Verification and lifecycle](../resources/publishing-dedi-files/verification-and-lifecycle.md).
 
 **Q: Can I subscribe to changes in a registry?**&#x20;
 
