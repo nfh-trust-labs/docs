@@ -38,3 +38,11 @@ Adopt the DeDi Protocol to start looking up and querying public records in verif
 More detailed information on getting started can be found [here](../dedi.global-developers/quickstart/namespace-and-registry-creation.md).
 {% endhint %}
 
+**Or publish on your own domain:**
+
+Adopting DeDi does not require an account, a server, or dedi.global. A publisher can sign one DeDi file per directory, serve a signed `/.well-known/dedi.index.json` declaring its signing key, and host both on infrastructure it already runs. Anyone can then verify those directories end to end, and DeDi servers can crawl, verify, and index them.
+
+{% content-ref url="../resources/publishing-dedi-files/" %}
+[publishing-dedi-files](../resources/publishing-dedi-files/)
+{% endcontent-ref %}
+

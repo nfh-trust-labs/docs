@@ -28,13 +28,23 @@ DeDi overcomes these challenges by transforming fragmented and inefficient regis
 
 DeDi unlocks new business value by making public directories accessible through a universal protocol coupled with suggested practices.
 
-> _At its core, **DeDi is an open protocol that defines universal, standardized API specifications for accessing any public registry, enabling seamless lookup and querying across diverse information sources.** By providing open-source API specifications, DeDi eliminates the need for costly custom integrations, allowing registrars to implement a unified and consistent interface for public information access._
+> _At its core, **DeDi is an open protocol for publishing public directories so that any party can discover them and verify what they say.** It defines one machine-readable convention for publishing a directory and one interface for reading it, eliminating the need for costly custom integrations with every source._
+
+### Adopting DeDi
+
+**A publisher adopts DeDi by publishing signed DeDi files.** There is no further requirement. The publisher produces one self-contained, signed DeDi file per directory and serves a signed `/.well-known/dedi.index.json` manifest declaring its signing key. No infrastructure need be operated: any organization with a domain and a signing key can comply.
+
+Reading is a separate role. A **DeDi server** — dedi.global is one — discovers and verifies published files, indexes them, and exposes the DeDi API (`/dedi/lookup`, `/dedi/query`) across many publishers, relaying each publisher's original signature rather than substituting its own. Servers are caches and indexes; they are not authorities, and running one is not how an organization adopts DeDi.
+
+{% content-ref url="../publishing-dedi-files/" %}
+[publishing-dedi-files](../publishing-dedi-files/)
+{% endcontent-ref %}
 
 DeDi doesn't necessitate changes to existing processes but implements characteristics that make public directories suitable for enhancing trust at a low cost such as:
 
 * **Publicly Accessible:** Allows anyone to look up specific records or query for multiple records, promoting transparency and broad usability.
-* **Machine-Readable:** Accessible over standard APIs (HTTPS, RESTful) with well-known schemas for easy programmatic interpretation and automation.
-* **Tamper-Resistant:** Offers cryptographic guarantees to ensure the immutability and verifiability of records, enabling a "trust, but verify" approach.
+* **Machine-Readable:** Published as signed JSON with well-known schemas, and readable over standard APIs (HTTPS, RESTful), for easy programmatic interpretation and automation.
+* **Tamper-Resistant:** Offers cryptographic guarantees to ensure the immutability and verifiability of records, enabling a "trust, but verify" approach — a published directory is signed by its publisher, and that signature travels with the data wherever it is served from.
 * **Provenance-Enabled:** Provides authorship of entries and a history of changes, allowing access to earlier versions for transparency and auditability.
 * **Live and Frequently Updated:** Ensures that information such as membership statuses, sanctions, and public keys is always up-to-date, reducing risks associated with outdated data.
 
@@ -51,7 +61,7 @@ DeDi doesn't necessitate changes to existing processes but implements characteri
 
 <summary>dedi.global – ready to use solution</summary>
 
-_To accelerate and simplify adoption,_ [_dedi.global_](http://dedi.global)_, is offered by the_ [_Network for Humanity Foundation_](https://networksforhumanity.org/) _as a ready to use, Universal Digital Infrastructure, in alignment with DPI (digital public infrastructure)_ [_principles_](https://docs.cdpi.dev/the-dpi-wiki/dpi-tech-architecture-principles) _. This philanthropic initiative allows registrars to effortlessly publish and manage their directories on a robust decentralized infrastructure, leveraging blockchain for automated governance, scalability, and enhanced trust—complementing and fully aligned with the open DeDi protocol._
+_For registrars who would rather not host and manage signed files themselves,_ [_dedi.global_](http://dedi.global) _is offered by the_ [_Network for Humanity Foundation_](https://networksforhumanity.org/) _as a ready to use, Universal Digital Infrastructure, in alignment with DPI (digital public infrastructure)_ [_principles_](https://docs.cdpi.dev/the-dpi-wiki/dpi-tech-architecture-principles) _. This philanthropic initiative allows registrars to effortlessly publish and manage their directories on a robust decentralized infrastructure, leveraging blockchain for automated governance, scalability, and enhanced trust—complementing and fully aligned with the open DeDi protocol._
 
 <a href="../dedi.global/" class="button primary">Read more</a>
 

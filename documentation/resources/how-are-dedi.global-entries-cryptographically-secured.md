@@ -2,6 +2,12 @@
 
 DeDi.global entries are cryptographically secured through proof anchoring on the CORD blockchain. Proofs are anchored at **every level** of the hierarchy—namespaces, registries, and records each have their own cryptographic proof.
 
+{% hint style="info" %}
+**Two proof models, one protocol.** What follows describes content published **through DeDi.global**, which the platform anchors on CORD. A directory published as **DeDi files on a publisher's own domain** carries a different proof: a detached JWS signed by the publisher, verifiable offline against the signing key declared at the publisher's `/.well-known/dedi.index.json`. Both satisfy the same three pillars — integrity, validity, authenticity — by different routes. See [Verification and lifecycle](publishing-dedi-files/verification-and-lifecycle.md).
+
+When DeDi.global begins serving crawled, origin-published content, those responses will carry the **publisher's original signature**, relayed unaltered — not a platform proof over someone else's data.
+{% endhint %}
+
 ### How Proofs Work
 
 Every entry in DeDi is secured through a consistent process:

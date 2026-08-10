@@ -14,6 +14,8 @@ DeDi.global transforms static public registries into machine-readable, cryptogra
 
 DeDi.global is built on the Decentralized Directory Protocol (DDP) — an open standard under Linux Foundation Decentralized Trust (LFDT). The protocol is not a software product. It is a universal, interoperable foundation for accessing and verifying public information. Anyone can implement it.
 
+In protocol terms, DeDi.global is a **DeDi server**: it verifies, indexes, and serves directories, and offers hosted publishing to registrars who would rather not host and sign files themselves. It is one implementation among possible others, and it is never an authority over the data it serves. Publishers who prefer to serve their own signed files on their own domain can do so without it — see [Publishing DeDi files](../publishing-dedi-files/).
+
 ## Architecture
 
 DeDi organizes information into three tightly coupled tiers:

@@ -8,6 +8,19 @@ Before proceeding, review the core protocol specifications available [here](http
 
 Anyone implementing the DeDi Protocol or integrating with DeDi Global must be familiar with its **three-tier architecture** and **API conventions**, which together enable secure and verifiable data discoverability.
 
+### Two roles: publisher and server
+
+The protocol separates producing directories from serving them.
+
+* A **publisher** owns the data. It adopts DeDi by publishing **signed DeDi files** — one self-contained JSON file per directory — plus a signed manifest at `/.well-known/dedi.index.json` declaring its signing key(s). A publisher exposes no endpoints and operates no infrastructure. Publishing is the whole of conformance.
+* A **DeDi server** is optional infrastructure. It discovers and verifies published files, indexes them, and exposes the DeDi API — `/dedi/lookup` and `/dedi/query` — across many publishers, relaying each publisher's original signature rather than substituting its own. DeDi Global is such a server.
+
+A relying party gets an equivalent guarantee whether it queries a server or fetches a publisher's file directly, because the signature it checks is the publisher's in both cases.
+
+{% content-ref url="../resources/publishing-dedi-files/" %}
+[publishing-dedi-files](../resources/publishing-dedi-files/)
+{% endcontent-ref %}
+
 The **DeDi architecture** is organized into three hierarchical layers:
 
 #### 1. Namespace (Root Level)

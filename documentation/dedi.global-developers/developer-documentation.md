@@ -8,6 +8,12 @@ Understand the three-tier architecture (Namespace → Registry → Record) and c
 
 [Read DeDi 101 →](dedi-101.md)
 
+#### 📄 Publishing DeDi files
+
+Adopt DeDi without running anything: signed DeDi files, the `/.well-known/dedi.index.json` manifest, verification, and discovery.
+
+[Read the publishing model →](../resources/publishing-dedi-files/)
+
 #### 🚀 Quickstart
 
 Set up your account, create a namespace, verify your domain, and publish your first registry.
