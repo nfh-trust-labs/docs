@@ -142,6 +142,41 @@ Deletion removes the active entity from lookup, query, version, and publish flow
 }
 ```
 
+## Namespace Export
+
+Export all registries and records under a namespace as a zip archive. This is useful for creating backups before deletion.
+
+**Endpoint:** `GET /dedi/{namespace}/get-registry-by-profile?option=export`
+
+**Path Parameters:**
+- `namespace` (required): Namespace ID or verified domain
+
+**Query Parameters:**
+- `option` (required): Set to `export` to trigger zip download
+
+**Authentication:** Required
+
+**Example Request:**
+```bash
+curl -X GET "https://api.dedi.global/dedi/my-namespace/get-registry-by-profile?option=export" \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -o my-namespace-export.zip
+```
+
+**Response:**
+- Content-Type: `application/zip`
+- Content-Disposition: `attachment; filename="{namespace-name}-export.zip"`
+
+The zip archive contains:
+- `registries.csv` — metadata for all registries under the namespace
+- `{registry_name}.csv` — one CSV file per registry containing all its records (with flattened schema fields and record metadata)
+
+**Error Responses:**
+- `400` - Missing namespace parameter
+- `401` - Unauthorized
+- `404` - Namespace not found
+- `500` - Internal server error
+
 ## Deleted Entity Listing APIs
 
 These endpoints return the latest deleted snapshot that is still eligible for restoration.

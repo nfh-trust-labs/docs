@@ -17,10 +17,12 @@ POST /dedi/bulk-upload
 Content-Type: multipart/form-data
 ```
 
-| Field       | Value                                     |
-| ----------- | ----------------------------------------- |
-| `namespace` | Your namespace ID or verified domain name |
-| `file`      | CSV file                                  |
+| Field             | Value                                                               |
+| ----------------- | ------------------------------------------------------------------- |
+| `namespace`       | Your namespace ID or verified domain name (required)                |
+| `registry_name`   | Target registry name (required)                                     |
+| `record_name_field` | CSV column to use as `record_name` (optional)                     |
+| `file`            | CSV file (required)                                                 |
 
 **Example:**
 
@@ -28,6 +30,7 @@ Content-Type: multipart/form-data
 curl -X POST https://api.dedi.global/dedi/bulk-upload \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -F "namespace=your-domain.com" \
+  -F "registry_name=my-registry" \
   -F "file=@records.csv"
 ```
 

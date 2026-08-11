@@ -86,7 +86,10 @@ const txtResponse = await fetch('https://api.dedi.global/dedi/generate-dns-txt/y
 ```
 
 ### 5. **Publish the Proof**
-For `self_dns`, add the generated TXT record to your domain's DNS settings through your domain provider (GoDaddy, Cloudflare, Route 53, etc.):
+
+#### For `self_dns`:
+
+Add the generated TXT record to your domain's DNS settings through your domain provider (GoDaddy, Cloudflare, Route 53, etc.):
 
 ```
 Record Type: TXT
@@ -95,13 +98,24 @@ Value: [generated verification string] <-- make sure you copy the entire DNS TXT
 TTL: 300 (or minimum allowed)
 ```
 
-For `self_http`, expose the same TXT value at:
+#### For `self_http`:
+
+Serve the same TXT value from a well-known URL on your domain. The value must be accessible at:
 
 ```text
 https://<your-domain>/.well-known/dedi-verification.txt
 ```
 
-For `request_other_namespace`, the generate step creates a pending request for the target namespace delegates.
+The file content must be exactly the generated TXT value (e.g., `dedi-verification=abcdefg1234567`). You can configure your web server to serve this file, or host it as a static file at that path.
+
+**Requirements:**
+- The URL must be publicly accessible over HTTPS
+- The file content must match the generated TXT value exactly
+- No extra whitespace or line breaks should be present
+
+#### For `request_other_namespace`:
+
+The generate step creates a pending verification request for the target namespace delegates. The target namespace must already be self-verified. You do not need to publish anything yourself — the target namespace delegates will review and accept or reject your request.
 
 ### 6. **Verification**
 Once DNS propagation is complete (usually 5-30 minutes), verify your domain using the [Verify Domain API](#verify-domain-ownership):
@@ -211,9 +225,11 @@ Verify domain ownership by checking the TXT record in DNS.
 **Verification Process:**
 1. Validates the namespace exists
 2. Retrieves the generated self-verification record
-3. Attempts DNS TXT verification first
+3. Attempts DNS TXT verification first for the domain
 4. Falls back to HTTP verification at `/.well-known/dedi-verification.txt` if DNS verification does not succeed
 5. Updates namespace and domain verification status if a proof matches
+
+> **Note:** The automatic DNS-to-HTTP fallback applies to both `self_dns` and `self_http` verification methods. Regardless of which method was used to generate the TXT, the system always tries DNS first, then HTTP.
 
 **Example Request:**
 ```typescript
@@ -248,6 +264,7 @@ const data = await response.json();
 - HTTP verification is attempted after DNS verification if DNS does not match
 - Only self-managed verification records are verified through this endpoint
 - Verified domains cannot be shared between multiple namespaces
+- **One self-verification per namespace**: Each namespace can only have one active self-verification (`self_dns` or `self_http`). You cannot verify `a.com` via `self_dns` and `b.com` via `self_http` on the same namespace. To change the verified domain, first remove the existing verification, then generate and verify a new one.
 
 ### Check Verification Status
 
@@ -410,6 +427,51 @@ const data = await response.json();
 
 Delegated domain verification uses verification requests and notification APIs.
 
+### How Delegated Verification Works
+
+When you use the `request_other_namespace` method, the system creates a verification request that the target namespace delegates can review. Here is the full lifecycle:
+
+1. **Request creation**: You call `GET /dedi/generate-dns-txt/{namespace_id}/{domain}?verification_method=request_other_namespace&target_namespace={target}`. The system generates a TXT value and creates a pending `VerificationRequest` record along with a `pending` notification for the target namespace delegates.
+
+2. **Notification**: The target namespace delegates receive a notification with the request details (requester namespace, domain, TXT value).
+
+3. **Accept/Reject**: Delegates review the request and call `POST /dedi/verification-requests/{request_id}/accept` or `reject`.
+
+4. **On Accept**: The system:
+   - Creates or reuses an `"Attested-namespaces"` registry in the attester's namespace (if it doesn't already exist)
+   - Creates an attestation record in that registry with the schema `{ namespace_id, domain, TXT }`
+   - Queues chain tasks for both the registry and record
+   - Returns `registry_id` and `record_id` in the response
+
+5. **Validity**: Delegated verification attestations are valid for **3 months**. After 3 months, the domain re-verification cron will attempt to re-verify the attestation. If re-verification fails, the source enters a 7-day grace period before removal.
+
+6. **On Reject**: The request is marked as rejected. No further action is taken.
+
+### Clear All Notifications
+
+Delete all read notifications and their associated pending verification requests.
+
+**Endpoint:** `POST /dedi/notifications/clearall`
+
+**Request Body:** None
+
+**Success Response (200):**
+
+```json
+{
+  "message": "All notifications cleared",
+  "data": {
+    "notifications_deleted": 5,
+    "verification_requests_deleted": 3
+  }
+}
+```
+
+**Notes:**
+- Only read notifications are deleted
+- Pending verification requests associated with cleared notifications are also deleted
+- Unread notifications are not affected
+
 ### List Pending Verification Notifications
 
 **Endpoint:** `GET /dedi/notifications/pending`
@@ -536,14 +598,45 @@ Delegated domain verification uses verification requests and notification APIs.
 
 ## Domain Re-verification
 
-Verified domains are re-checked on a scheduled basis.
+Verified domains are re-checked on a scheduled basis to ensure continued ownership.
 
-- Self-managed verification sources (`self_dns`, `self_http`) and accepted delegated verification sources (`request_other_namespace`) participate in re-verification.
-- The current implementation re-verifies active sources after a configurable interval. The default interval is `1` year.
-- If a re-verification attempt fails, the source enters a configurable grace period. The default grace period is `7` days.
-- If the verification source is restored during the grace period, the source remains active.
-- If the source still fails after the grace period, that verification source is removed.
-- If no active verification source remains for the domain, the domain is removed from the namespace verification state.
+### How Re-verification Works
+
+1. **Scan phase**: A cron job runs at `:05` past every hour, scanning all active verification sources that have exceeded the configurable re-verification interval.
+
+2. **Verification attempt**: For each source, the system attempts to verify the domain using the same DNS/HTTP fallback as the initial verification.
+
+3. **On success**: The source's `last_verified_at` timestamp is updated and the source remains active.
+
+4. **On failure**: The source enters a configurable grace period. A separate cron job runs at `:20` past every hour to follow up on failed entries.
+
+5. **Grace period expiry**: If the source is not restored during the grace period, the verification source is removed.
+
+6. **Domain removal**: If no active verification source remains for a domain, the domain is removed from the namespace verification state.
+
+### Configuration
+
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `DOMAIN_REVERIFICATION_AFTER` | 1 year | Interval between re-verification checks |
+| `REVERIFICATION_GRACE_PERIOD` | 7 days | Grace period after a failed re-verification |
+
+### Delegated Verification Expiry
+
+Accepted delegated verification attestations (`request_other_namespace`) have a **3-month validity period**. After 3 months, the domain re-verification cron attempts to re-verify the attestation. If re-verification fails:
+- The attestation source is removed entirely (not just grace-perioded)
+- The attester's `Attested-namespaces` registry attestation record is deleted
+- The chain task to remove the attestation is queued
+
+### Email Notifications
+
+The system sends email notifications at two stages:
+1. **On re-verification failure**: Notifies namespace delegates that a verification source failed re-verification
+2. **After grace period expiry**: Notifies namespace delegates that a verification source has been removed
+
+### Failed Re-verification Records
+
+Failed re-verification attempts are tracked in the `FailedReverifications` table with a unique `source_key` to prevent duplicate processing.
 
 ## Best Practices
 

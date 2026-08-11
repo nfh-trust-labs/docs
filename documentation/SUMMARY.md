@@ -43,6 +43,7 @@
   * [State Management](dedi.global-developers/standard-apis/state-management.md)
   * [Advanced Search](dedi.global-developers/standard-apis/advanced-search.md)
   * [Subscription (Watch)](dedi.global-developers/standard-apis/subscription.md)
+  * [Stats](dedi.global-developers/standard-apis/stats.md)
   * [Lookup Verification](dedi.global-developers/standard-apis/lookup-verification.md)
 * [Guides](dedi.global-developers/guides/README.md)
   * [Schema design](dedi.global-developers/guides/schema-design.md)
@@ -50,6 +51,7 @@
   * [Delegation Guide](dedi.global-developers/guides/delegation-guide.md)
   * [State management](dedi.global-developers/guides/state-management.md)
   * [Watch Feature](dedi.global-developers/guides/watch-feature.md)
+  * [X402 Agent-Ready Authentication](dedi.global-developers/guides/x402-authentication.md)
 
 ## API Tools & Resources
 

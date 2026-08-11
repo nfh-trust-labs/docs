@@ -22,7 +22,7 @@ Set up your account, create a namespace, verify your domain, and publish your fi
 
 #### 📡 API Reference
 
-Complete documentation for all DeDi.global APIs — Publish, Access, Domain Verification, Delegation, State Management, Search, Subscriptions, and Verification.
+Complete documentation for all DeDi.global APIs — Publish, Access, Domain Verification, Delegation, State Management, Search, Subscriptions, Stats, and Verification.
 
 [View API Reference →](standard-apis/)
 
@@ -36,5 +36,5 @@ Practical how-tos for schema design, bulk upload, delegation, state management, 
 
 Postman Collection and OpenAPI Specification for testing, code generation, and integration.
 
-[View Tools →](/broken/pages/i2eafsJXn9kmpvgbqwBk)
+[View Tools →](api-tools/)
 
