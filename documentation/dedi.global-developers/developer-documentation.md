@@ -36,5 +36,5 @@ Practical how-tos for schema design, bulk upload, delegation, state management, 
 
 Postman Collection and OpenAPI Specification for testing, code generation, and integration.
 
-[View Tools →](/broken/pages/i2eafsJXn9kmpvgbqwBk)
+[View Tools →](api-tools/)
 

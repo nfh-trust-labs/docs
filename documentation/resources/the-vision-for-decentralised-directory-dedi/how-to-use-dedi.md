@@ -26,7 +26,7 @@ Sign one DeDi file per directory, serve a signed `/.well-known/dedi.index.json` 
 | Maintenance         | Yours: re-issue on a cadence so `next_update` stays fresh, and manage your signing key through your own well-known.                                                                 |
 | Lock-in risk        | None — there is no operator in the path at all.                                                                                                                                     |
 | What you get        | Publisher-signed, offline-verifiable directories on your own domain; self-service key rotation and revocation; no dependency on any operator.                                        |
-| Note                | Files published this way are verifiable today by any conformant verifier. Indexing by dedi.global's APIs arrives with the crawler, which is [in development](../publishing-dedi-files/dedi.global-and-origin-published-files.md). |
+| Note                | Files published this way are verifiable by any conformant verifier, and once your domain is on the discovery list they are [indexed and served by dedi.global](../publishing-dedi-files/dedi.global-and-origin-published-files.md) too. |
 
 <a href="../publishing-dedi-files/" class="button primary">How to publish DeDi files</a>
 
