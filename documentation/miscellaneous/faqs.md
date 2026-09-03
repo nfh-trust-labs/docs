@@ -48,7 +48,7 @@ Two ways: a server that reaches your domain fetches `/.well-known/dedi.index.jso
 
 **Q: Does DeDi.global index files published on my own domain today?**&#x20;
 
-Not yet. The publishing model is part of the protocol and works today — your files are independently verifiable by anyone. The crawler that ingests origin-published files into DeDi.global's index and APIs is in development; see [dedi.global and origin-published files](../resources/publishing-dedi-files/dedi.global-and-origin-published-files.md).
+Yes. Add your domain to the discovery list and DeDi.global's crawler fetches, verifies, and indexes your files, serving them through `/dedi/lookup` and `/dedi/query` with your original signature. Your files are also independently verifiable by anyone without DeDi.global. See [dedi.global and origin-published files](../resources/publishing-dedi-files/dedi.global-and-origin-published-files.md).
 
 **Q: If I publish on my own domain, do I still get on-chain anchoring?**&#x20;
 

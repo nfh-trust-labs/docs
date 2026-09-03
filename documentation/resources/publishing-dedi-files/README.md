@@ -56,6 +56,17 @@ The trust model depends only on the first two, both of which are signed. The dis
 
 A publisher may host its files anywhere it controls — its own web server, a source repository, a public file-sharing service — or deposit them with a DeDi server that hosts them on its behalf. The choice of host does not affect verification: a verifier checks the publisher's signature against the key declared at the publisher's well-known, whoever serves the bytes. **Hosting is a deployment concern and carries no weight in the trust model.**
 
+## Tooling
+
+[`dedi-cli`](https://github.com/nfh-trust-labs/dedi-cli) generates an Ed25519 keypair, signs a manifest or DeDi file, and verifies signatures locally — the whole publisher workflow from a shell, with no network access except an optional schema fetch during `sign`. Pre-built binaries for macOS, Linux, and Windows are on its [releases page](https://github.com/nfh-trust-labs/dedi-cli/releases).
+
+```
+dedi-cli keygen --kid my-key-1 --out key.json
+dedi-cli sign --key key.json --in unsigned.json --out signed.json
+```
+
+The private key never leaves the machine that runs `keygen`; treat `key.json` as a secret.
+
 ## Read next
 
 {% content-ref url="dedi-file-and-manifest.md" %}

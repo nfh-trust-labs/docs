@@ -39,5 +39,5 @@ The list therefore requires no proof of control, no registration record, and no 
 Add your domain to the root `domains.txt` in the protocol repository by pull request. Adding a domain is the publisher's own opt-in to being crawled; it grants nothing and asserts nothing beyond "there may be DeDi files here."
 
 {% hint style="info" %}
-**Status.** Automated handling of list additions, and dedi.global's crawler that consumes the list, are in development. See [dedi.global and origin-published files](dedi.global-and-origin-published-files.md).
+**Status.** dedi.global's crawler consumes the root list and indexes the domains on it. List additions are reviewed as pull requests. See [dedi.global and origin-published files](dedi.global-and-origin-published-files.md).
 {% endhint %}
